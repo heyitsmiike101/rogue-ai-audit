@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rogue AI Audit v2 - Sample Report</title>
+<style>
+:root { --bg:#f6f7f9; --card:#fff; --fg:#1d2330; --muted:#5d6675; --line:#dfe3ea; --critical:#7f1d1d;
+  --high:#c62828; --medium:#d97706; --review:#6d4fc2; --low:#2f7d32; --info:#3a6fb0; }
+@media (prefers-color-scheme: dark) { :root { --bg:#14171c; --card:#1d2129; --fg:#e6e9ef; --muted:#9aa3b2; --line:#2e3440; --critical:#fca5a5;
+  --high:#ef5350; --medium:#f59e0b; --review:#a78bfa; --low:#66bb6a; --info:#64a0e6; } }
+* { box-sizing:border-box; }
+body { margin:0; padding:24px 16px; background:var(--bg); color:var(--fg); font:14px/1.45 "Segoe UI", system-ui, sans-serif; }
+main { max-width:1400px; margin:0 auto; }
+h1 { margin:0 0 4px; font-size:22px; } .sub { color:var(--muted); margin-bottom:20px; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:20px; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
+.card .n { font-size:26px; font-weight:600; } .card .l { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+.card.High .n { color:var(--high); } .card.Medium .n { color:var(--medium); } .card.Review .n { color:var(--review); } .card.Low .n { color:var(--low); }
+.tools { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+.tools input, .tools select { padding:7px 10px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--fg); font:inherit; }
+.tools input { flex:1; min-width:200px; }
+.wrap { overflow-x:auto; background:var(--card); border:1px solid var(--line); border-radius:8px; }
+table { border-collapse:collapse; width:100%; }
+th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+th { position:sticky; top:0; background:var(--card); font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+td.num { text-align:right; } .detail { color:var(--muted); font-size:12px; word-break:break-all; max-width:520px; }
+.badge { display:inline-block; padding:1px 8px; border-radius:10px; font-size:12px; font-weight:600; color:#fff; }
+.badge.High { background:var(--high); } .badge.Medium { background:var(--medium); } .badge.Review { background:var(--review); }
+.badge.Low { background:var(--low); } .badge.Info { background:var(--info); }
+.notes { margin-top:20px; color:var(--muted); } .notes ul { margin:4px 0 0; padding-left:20px; }
+h2 { margin:32px 0 4px; font-size:18px; }
+.card.Critical .n { color:var(--critical); } .badge.Critical { background:#7f1d1d; }
+.mono { font-family:Consolas, "Cascadia Mono", monospace; font-size:12px; word-break:break-all; }
+.ctx { max-width:460px; color:var(--muted); } .ctx hr { border:0; border-top:1px dashed var(--line); margin:6px 0; }
+</style></head><body><main>
+<div style="background:#fff4d6;color:#5c4300;border:1px solid #e8c766;border-radius:8px;padding:10px 14px;margin-bottom:16px"><b>Sample report.</b> All computers, users, companies and findings on this page are fictitious and were made up to show the report format. Masked values are fake and do not belong to real cards, accounts, keys or people.</div>
+<h1>Rogue AI Audit v2: NWD-LT-0417</h1>
+<div class="sub">Run 2026-10-28 09:45 &middot; elevated: True &middot; profiles: akim, dlopez, jparker &middot; history window: 30 days</div>
+<div class="cards">
+<div class="card"><div class="n">20</div><div class="l">Findings</div></div>
+<div class="card"><div class="n">17</div><div class="l">Unsanctioned</div></div>
+<div class="card High"><div class="n">8</div><div class="l">High</div></div>
+<div class="card Medium"><div class="n">7</div><div class="l">Medium</div></div>
+<div class="card Review"><div class="n">1</div><div class="l">Review</div></div>
+<div class="card Low"><div class="n">1</div><div class="l">Low</div></div>
+</div>
+<h2>AI apps, extensions and sites</h2>
+<div class="tools" data-for="rows">
+<input type="search" placeholder="Filter by app, site, user, source...">
+<select class="f-risk"><option value="">All risks</option><option>High</option><option>Medium</option><option>Review</option><option>Low</option><option>Info</option></select>
+<select class="f-status"><option value="">All statuses</option><option>Unsanctioned</option><option>Sanctioned</option><option>Governance</option></select>
+</div>
+<div class="wrap"><table><thead><tr><th>Risk</th><th>Status</th><th>User</th><th>Item</th><th>Category</th><th>Source</th><th>Visits</th><th>First seen</th><th>Last seen</th></tr></thead>
+<tbody id="rows">
+<tr data-risk="High" data-status="Unsanctioned"><td><span class="badge High">High</span></td><td>Unsanctioned</td><td>jparker</td><td><b>DeepSeek</b><div class="detail">chat.deepseek.com</div></td><td>Chat assistant</td><td>Browser history (Chrome/Default)</td><td class="num">23</td><td>2026-10-02 09:14</td><td>2026-10-27 16:41</td></tr>
+<tr data-risk="High" data-status="Unsanctioned"><td><span class="badge High">High</span></td><td>Unsanctioned</td><td>jparker</td><td><b>Monica - ChatGPT AI Assistant</b><div class="detail">ofpnmcalabcbjgholdjcjblkibolbppb; can read every site</div></td><td>Browser AI extension</td><td>Browser extension (Chrome/Default)</td><td class="num"></td><td></td><td></td></tr>
+<tr data-risk="High" data-status="Unsanctioned"><td><span class="badge High">High</span></td><td>Unsanctioned</td><td>dlopez</td><td><b>Ollama</b><div class="detail">ollama.exe C:\Users\dlopez\AppData\Local\Programs\Ollama\ollama.exe</div></td><td>Local LLM runtime</td><td>Running process</td><td class="num"></td><td></td><td></td></tr>
+<tr data-risk="High" data-status="Unsanctioned"><td><span class="badge High">High</span></td><td>Unsanctioned</td><td>dlopez</td><td><b>Ollama model store</b><div class="detail">C:\Users\dlopez\.ollama\models (14.62 GB)</div></td><td>Local model files</td><td>Profile folder</td><td class="num"></td><td></td><td>2026-10-21 11:03</td></tr>
+<tr data-risk="High" data-status="Unsanctioned"><td><span class="badge High">High</span></td><td>Unsanctioned</td><td>dlopez</td><td><b>LM Studio</b><div class="detail">C:\Users\dlopez\AppData\Local\Programs\LM Studio</div></td><td>Local LLM runtime</td><td>Profile folder</td><td class="num"></td><td></td><td>2026-10-19 15:22</td></tr>
+<tr data-risk="High" data-status="Unsanctioned"><td><span class="badge High">High</span></td><td>Unsanctioned</td><td>akim</td><td><b>Character.AI</b><div class="detail">character.ai, neo.character.ai</div></td><td>AI companion</td><td>Browser history (Edge/Default)</td><td class="num">41</td><td>2026-10-01 20:05</td><td>2026-10-26 22:17</td></tr>
+<tr data-risk="High" data-status="Unsanctioned"><td><span class="badge High">High</span></td><td>Unsanctioned</td><td>akim</td><td><b>Undetectable AI</b><div class="detail">undetectable.ai</div></td><td>AI humanizer</td><td>Browser history (Edge/Default)</td><td class="num">6</td><td>2026-10-14 13:40</td><td>2026-10-22 10:02</td></tr>
+<tr data-risk="High" data-status="Unsanctioned"><td><span class="badge High">High</span></td><td>Unsanctioned</td><td>jparker</td><td><b>Poe</b><div class="detail">poe.com</div></td><td>Model aggregator</td><td>Browser history (Chrome/Default)</td><td class="num">9</td><td>2026-10-08 10:31</td><td>2026-10-24 14:55</td></tr>
+<tr data-risk="Medium" data-status="Unsanctioned"><td><span class="badge Medium">Medium</span></td><td>Unsanctioned</td><td>jparker</td><td><b>ChatGPT</b><div class="detail">chatgpt.com</div></td><td>Chat assistant</td><td>Browser history (Chrome/Default)</td><td class="num">128</td><td>2026-09-29 08:47</td><td>2026-10-28 08:12</td></tr>
+<tr data-risk="Medium" data-status="Unsanctioned"><td><span class="badge Medium">Medium</span></td><td>Unsanctioned</td><td>jparker</td><td><b>ChatGPT desktop</b><div class="detail">OpenAI.ChatGPT-Desktop 1.2026.288.0</div></td><td>Chat assistant</td><td>Store/MSIX package</td><td class="num"></td><td></td><td></td></tr>
+<tr data-risk="Medium" data-status="Unsanctioned"><td><span class="badge Medium">Medium</span></td><td>Unsanctioned</td><td>akim</td><td><b>Claude</b><div class="detail">claude.ai</div></td><td>Chat assistant</td><td>Browser history (Edge/Default)</td><td class="num">37</td><td>2026-10-03 11:20</td><td>2026-10-27 17:48</td></tr>
+<tr data-risk="Medium" data-status="Unsanctioned"><td><span class="badge Medium">Medium</span></td><td>Unsanctioned</td><td>dlopez</td><td><b>Cursor</b><div class="detail">Anysphere 2.4.1 C:\Users\dlopez\AppData\Local\Programs\cursor</div></td><td>Code assistant</td><td>Installed program</td><td class="num"></td><td></td><td></td></tr>
+<tr data-risk="Medium" data-status="Unsanctioned"><td><span class="badge Medium">Medium</span></td><td>Unsanctioned</td><td>dlopez</td><td><b>Claude Code CLI</b><div class="detail">C:\Users\dlopez\.claude</div></td><td>AI CLI agent</td><td>Profile folder</td><td class="num"></td><td></td><td>2026-10-27 18:30</td></tr>
+<tr data-risk="Medium" data-status="Unsanctioned"><td><span class="badge Medium">Medium</span></td><td>Unsanctioned</td><td>akim</td><td><b>Otter.ai</b><div class="detail">otter.ai</div></td><td>Meeting transcription</td><td>Browser history (Edge/Default)</td><td class="num">15</td><td>2026-10-06 14:00</td><td>2026-10-23 15:01</td></tr>
+<tr data-risk="Medium" data-status="Unsanctioned"><td><span class="badge Medium">Medium</span></td><td>Unsanctioned</td><td>(machine)</td><td><b>Perplexity</b><div class="detail">www.perplexity.ai</div></td><td>Search assistant</td><td>DNS cache (recent lookups)</td><td class="num"></td><td></td><td></td></tr>
+<tr data-risk="Review" data-status="Unsanctioned"><td><span class="badge Review">Review</span></td><td>Unsanctioned</td><td>jparker</td><td><b>chatgptfree.example-ai.net</b><div class="detail">chatgptfree.example-ai.net</div></td><td>Possible AI site (keyword)</td><td>Browser history (Chrome/Default)</td><td class="num">3</td><td>2026-10-11 12:16</td><td>2026-10-11 12:29</td></tr>
+<tr data-risk="Low" data-status="Sanctioned"><td><span class="badge Low">Low</span></td><td>Sanctioned</td><td>jparker</td><td><b>Microsoft 365 Copilot</b><div class="detail">Microsoft.MicrosoftOfficeHub 19.2610.35011.0</div></td><td>Chat assistant</td><td>Store/MSIX package</td><td class="num"></td><td></td><td></td></tr>
+<tr data-risk="Low" data-status="Sanctioned"><td><span class="badge Low">Low</span></td><td>Sanctioned</td><td>akim</td><td><b>Microsoft 365 Copilot</b><div class="detail">m365.cloud.microsoft</div></td><td>Chat assistant</td><td>Browser history (Edge/Default)</td><td class="num">54</td><td>2026-09-30 08:02</td><td>2026-10-28 09:40</td></tr>
+<tr data-risk="Low" data-status="Unsanctioned"><td><span class="badge Low">Low</span></td><td>Unsanctioned</td><td>akim</td><td><b>Grammarly</b><div class="detail">Grammarly Inc 1.2.140</div></td><td>Writing assistant</td><td>Installed program</td><td class="num"></td><td></td><td></td></tr>
+<tr data-risk="Info" data-status="Governance"><td><span class="badge Info">Info</span></td><td>Governance</td><td>jparker</td><td><b>Prompt Security</b><div class="detail">Prompt Security browser extension</div></td><td>AI governance</td><td>Browser extension (Chrome/Default)</td><td class="num"></td><td></td><td></td></tr>
+</tbody></table></div>
+<h2>High-value data in AI prompts and caches</h2>
+<div class="sub">Rule-based scan (patterns, checksums, keywords; no AI) of prompts and conversations AI tools stored on this PC in the last 90 days. Values are masked. This section still describes sensitive data: treat the report as confidential.</div>
+<div class="cards">
+<div class="card"><div class="n">17</div><div class="l">Data findings</div></div>
+<div class="card Critical"><div class="n">5</div><div class="l">Critical</div></div>
+<div class="card High"><div class="n">7</div><div class="l">High</div></div>
+<div class="card Medium"><div class="n">3</div><div class="l">Medium</div></div>
+<div class="card Low"><div class="n">2</div><div class="l">Low</div></div>
+</div>
+<div class="tools" data-for="drows">
+<input type="search" placeholder="Filter by app, rule, user, file...">
+<select class="f-risk"><option value="">All severities</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
+</div>
+<div class="wrap"><table><thead><tr><th>Severity</th><th>User</th><th>App / source</th><th>Rule</th><th>Hits</th><th>Unique</th><th>Examples (masked)</th><th>Context (masked)</th><th>File</th></tr></thead>
+<tbody id="drows">
+<tr data-risk="Critical"><td><span class="badge Critical">Critical</span></td><td>jparker</td><td>ChatGPT site storage (Chrome/Default)</td><td><b>Payment card number</b><div class="detail">Financial</div></td><td class="num">2</td><td class="num">1</td><td class="mono">************4417</td><td class="mono ctx">...customer says the charge failed twice, card [************4417] exp ##/## - can you write a polite reply asking them to retry...</td><td class="detail">C:\Users\jparker\AppData\Local\Google\Chrome\User Data\Default\IndexedDB\https_chatgpt.com_0.indexeddb.leveldb\000214.ldb<br>2026-10-24 14:52</td></tr>
+<tr data-risk="Critical"><td><span class="badge Critical">Critical</span></td><td>akim</td><td>AI page titles (Edge/Default)</td><td><b>US Social Security number</b><div class="detail">Personal identity</div></td><td class="num">1</td><td class="num">1</td><td class="mono">*****2210</td><td class="mono ctx">...Fix W-4 form for employee SSN [*****2210]...</td><td class="detail">Browser history titles, last 30 days<br></td></tr>
+<tr data-risk="Critical"><td><span class="badge Critical">Critical</span></td><td>dlopez</td><td>Claude Code CLI</td><td><b>AWS access key ID</b><div class="detail">Credential / secret</div></td><td class="num">3</td><td class="num">1</td><td class="mono">AKIAQ...[20 chars]</td><td class="mono ctx">...why does this fail? aws configure set aws_access_key_id [AKIAQ...[20 chars]] &amp;&amp; aws s3 ls s3://northwind-billing-exports ...</td><td class="detail">C:\Users\dlopez\.claude\projects\C--repos-billing-sync\5e1c0a7d.jsonl<br>2026-10-27 18:22</td></tr>
+<tr data-risk="Critical"><td><span class="badge Critical">Critical</span></td><td>dlopez</td><td>Cursor chat</td><td><b>Database connection string with password</b><div class="detail">Credential / secret</div></td><td class="num">1</td><td class="num">1</td><td class="mono">Wn...[13 chars]</td><td class="mono ctx">...refactor this: Server=sql-prod-02;Database=Payroll;User Id=svc_payroll;Password=[Wn...[13 chars]]; ...</td><td class="detail">C:\Users\dlopez\AppData\Roaming\Cursor\User\globalStorage\state.vscdb<br>2026-10-25 10:41</td></tr>
+<tr data-risk="Critical"><td><span class="badge Critical">Critical</span></td><td>dlopez</td><td>Ollama CLI</td><td><b>Private key</b><div class="detail">Credential / secret</div></td><td class="num">1</td><td class="num">1</td><td class="mono">-----BEGIN RSA PRIVATE KEY-----</td><td class="mono ctx">...&gt;&gt;&gt; convert this key to PEM for the vpn: [-----BEGIN RSA PRIVATE KEY-----] MIIE... ...</td><td class="detail">C:\Users\dlopez\.ollama\history<br>2026-10-21 11:05</td></tr>
+<tr data-risk="High"><td><span class="badge High">High</span></td><td>jparker</td><td>ChatGPT site storage (Chrome/Default)</td><td><b>Bank routing number (labeled)</b><div class="detail">Financial</div></td><td class="num">1</td><td class="num">1</td><td class="mono">*****0358</td><td class="mono ctx">...update the vendor remittance: routing number [*****0358], account number ############, Northwind Traders LLC...</td><td class="detail">C:\Users\jparker\AppData\Local\Google\Chrome\User Data\Default\IndexedDB\https_chatgpt.com_0.indexeddb.leveldb\000214.ldb<br>2026-10-24 14:52</td></tr>
+<tr data-risk="High"><td><span class="badge High">High</span></td><td>jparker</td><td>ChatGPT site storage (Chrome/Default)</td><td><b>Bank account number (labeled)</b><div class="detail">Financial</div></td><td class="num">1</td><td class="num">1</td><td class="mono">********7731</td><td class="mono ctx">...routing number #########, account number [********7731], Northwind Traders LLC, please format as a wire request...</td><td class="detail">C:\Users\jparker\AppData\Local\Google\Chrome\User Data\Default\IndexedDB\https_chatgpt.com_0.indexeddb.leveldb\000214.ldb<br>2026-10-24 14:52</td></tr>
+<tr data-risk="High"><td><span class="badge High">High</span></td><td>akim</td><td>Claude desktop</td><td><b>Date of birth (labeled)</b><div class="detail">Personal identity</div></td><td class="num">4</td><td class="num">3</td><td class="mono">03******84 | 11******79 | 07******91</td><td class="mono ctx">...summarize this intake form: Name: R. Alvarez, DOB: [03******84], policy ####### ...</td><td class="detail">C:\Users\akim\AppData\Roaming\Claude\IndexedDB\https_claude.ai_0.indexeddb.leveldb\000031.log<br>2026-10-27 17:46</td></tr>
+<tr data-risk="High"><td><span class="badge High">High</span></td><td>akim</td><td>Claude desktop</td><td><b>Diagnosis code (ICD-10)</b><div class="detail">Health (PHI)</div></td><td class="num">2</td><td class="num">2</td><td class="mono">F41.1 | M54.5</td><td class="mono ctx">...patient follow-up note, diagnosis [F41.1], recommend referral to ...</td><td class="detail">C:\Users\akim\AppData\Roaming\Claude\IndexedDB\https_claude.ai_0.indexeddb.leveldb\000031.log<br>2026-10-27 17:46</td></tr>
+<tr data-risk="High"><td><span class="badge High">High</span></td><td>jparker</td><td>AI page titles (Chrome/Default)</td><td><b>Privileged / trade secret marking</b><div class="detail">Confidential marking</div></td><td class="num">1</td><td class="num">1</td><td class="mono">Attorney-Client Privileged</td><td class="mono ctx">...Summarize [Attorney-Client Privileged] memo re: Contoso dispute...</td><td class="detail">Browser history titles, last 30 days<br></td></tr>
+<tr data-risk="High"><td><span class="badge High">High</span></td><td>dlopez</td><td>Claude Code CLI</td><td><b>Customer keyword</b><div class="detail">Customer keyword</div></td><td class="num">7</td><td class="num">2</td><td class="mono">Project Bluebird | Contoso merger</td><td class="mono ctx">...draft the board update for [Project Bluebird] including the revised timeline and ...</td><td class="detail">C:\Users\dlopez\.claude\history.jsonl<br>2026-10-27 18:30</td></tr>
+<tr data-risk="High"><td><span class="badge High">High</span></td><td>dlopez</td><td>Claude Code CLI</td><td><b>Password in text</b><div class="detail">Credential / secret</div></td><td class="num">2</td><td class="num">2</td><td class="mono">Su...[11 chars] | Nw...[12 chars]</td><td class="mono ctx">...the admin portal password is [Su...[11 chars]] but login keeps failing, here is the error ...</td><td class="detail">C:\Users\dlopez\.claude\history.jsonl<br>2026-10-27 18:30</td></tr>
+<tr data-risk="Medium"><td><span class="badge Medium">Medium</span></td><td>akim</td><td>Otter.ai site storage (Edge/Default)</td><td><b>HR / legal terms</b><div class="detail">Business sensitive</div></td><td class="num">5</td><td class="num">3</td><td class="mono">performance improvement plan | termination letter | severance</td><td class="mono ctx">...action items: HR to prepare [termination letter] and severance terms for ...</td><td class="detail">C:\Users\akim\AppData\Local\Microsoft\Edge\User Data\Default\IndexedDB\https_otter.ai_0.indexeddb.leveldb\000009.log<br>2026-10-23 15:01</td></tr>
+<tr data-risk="Medium"><td><span class="badge Medium">Medium</span></td><td>jparker</td><td>ChatGPT site storage (Chrome/Default)</td><td><b>Finance terms</b><div class="detail">Business sensitive</div></td><td class="num">11</td><td class="num">4</td><td class="mono">payroll | revenue forecast | term sheet</td><td class="mono ctx">...rewrite the Q4 [revenue forecast] slide so the board sees the decline as ...</td><td class="detail">C:\Users\jparker\AppData\Local\Google\Chrome\User Data\Default\IndexedDB\https_chatgpt.com_0.indexeddb.leveldb\000214.ldb<br>2026-10-24 14:52</td></tr>
+<tr data-risk="Medium"><td><span class="badge Medium">Medium</span></td><td>dlopez</td><td>Claude Code CLI</td><td><b>Confidential marking</b><div class="detail">Confidential marking</div></td><td class="num">3</td><td class="num">1</td><td class="mono">Confidential</td><td class="mono ctx">...header says [Confidential] - Northwind internal pricing model v3 ...</td><td class="detail">C:\Users\dlopez\.claude\projects\C--repos-pricing\9b2f41c3.jsonl<br>2026-10-20 09:12</td></tr>
+<tr data-risk="Low"><td><span class="badge Low">Low</span></td><td>jparker</td><td>ChatGPT site storage (Chrome/Default)</td><td><b>Email address</b><div class="detail">Contact details</div></td><td class="num">18</td><td class="num">9</td><td class="mono">r.********om | ap*****************om | m.**************om</td><td class="mono ctx">...send the remittance to [ap*****************om] and cc ...</td><td class="detail">C:\Users\jparker\AppData\Local\Google\Chrome\User Data\Default\IndexedDB\https_chatgpt.com_0.indexeddb.leveldb\000214.ldb<br>2026-10-24 14:52</td></tr>
+<tr data-risk="Low"><td><span class="badge Low">Low</span></td><td>dlopez</td><td>Claude Code CLI</td><td><b>Internal IP address</b><div class="detail">Infrastructure</div></td><td class="num">6</td><td class="num">4</td><td class="mono">10.40.12.5 | 10.40.12.9 | 192.168.20.14</td><td class="mono ctx">...can&#x27;t reach the db at [10.40.12.5] from the build agent ...</td><td class="detail">C:\Users\dlopez\.claude\history.jsonl<br>2026-10-27 18:30</td></tr>
+</tbody></table></div>
+<div class="notes"><b>Notes</b><ul><li>Sanctioned for this customer: Microsoft 365 Copilot (m365.cloud.microsoft, copilot.cloud.microsoft).</li><li>Prompt scan: 412 files changed in the last 90 days, plus AI page titles from history.</li></ul>
+<p>CSV and JSON: C:\ProgramData\RogueAIAudit\NWD-LT-0417_20261028-094512</p></div>
+</main>
+<script>
+document.querySelectorAll('.tools').forEach(function (bar) {
+  var q = bar.querySelector('input'), r = bar.querySelector('.f-risk'), s = bar.querySelector('.f-status');
+  var rows = document.querySelectorAll('#' + bar.dataset.for + ' tr');
+  function apply() {
+    var t = q.value.toLowerCase();
+    rows.forEach(function (tr) {
+      var ok = (!r.value || tr.dataset.risk === r.value) && (!s || !s.value || tr.dataset.status === s.value) &&
+               (!t || tr.textContent.toLowerCase().indexOf(t) !== -1);
+      tr.style.display = ok ? '' : 'none';
+    });
+  }
+  q.addEventListener('input', apply); r.addEventListener('change', apply); if (s) s.addEventListener('change', apply);
+});
+</script></body></html>
