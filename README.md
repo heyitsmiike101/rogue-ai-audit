@@ -45,17 +45,20 @@ the PC**, per user profile:
 
 The exact rule list for each level is generated from the script's rules into every report.
 
-## The detection summary
+## The report
 
-The top of every report is generated from that run:
-1. **Headline**: how many AI tools were found, on how many profiles, and how many had sensitive data, by rating.
-2. **How scoring works**: the rating levels and the rules behind each one.
-3. **What was found and why it matters**: for each tool rated Critical, High or Medium, the data types found (with
-   counts), why each type is a problem, and a note on the kind of tool (for example "local LLM runtime: models run
-   outside any company control").
-4. **Present but not scored**: tools found with no readable data, grouped by type, with what their presence means.
+A single self-contained HTML file (no internet needed to open it), chart-first, light and dark mode:
+1. **Stat tiles**: AI tools found, tools with sensitive data, Critical and High data findings, profiles scanned.
+2. **Tools by rating**: one bar split by rating.
+3. **Where the sensitive data is**: each tool with hits, ranked by rating, bar length = number of hits.
+4. **What kind of data**: a grid of tools against data types (secrets, financial, identity, health...), each cell
+   showing the count and colored by its worst rating. Hover a cell for the rules that matched.
+5. **Why it matters**: one short card per data type found.
+6. **Present but not scored**: tools with no readable data, grouped by type; hover for what each type means.
+7. **Collapsed sections**: how scoring works (every rule by rating), the full tools and data-findings tables with
+   filters, and run notes.
 
-The same text is saved to `Summary.json` (`SummaryText`) and printed to the console.
+A plain-text version of the summary is saved to `Summary.json` (`SummaryText`) and printed to the console.
 
 ## Requirements
 

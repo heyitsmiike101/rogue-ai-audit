@@ -2,57 +2,109 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rogue AI Audit (sample) - NWD-LT-0417</title>
 <style>
-:root { --bg:#f6f7f9; --card:#fff; --fg:#1d2330; --muted:#5d6675; --line:#dfe3ea; --critical:#7f1d1d;
-  --high:#c62828; --medium:#d97706; --low:#2f7d32; --info:#3a6fb0; }
-@media (prefers-color-scheme: dark) { :root { --bg:#14171c; --card:#1d2129; --fg:#e6e9ef; --muted:#9aa3b2; --line:#2e3440; --critical:#fca5a5;
-  --high:#ef5350; --medium:#f59e0b; --low:#66bb6a; --info:#64a0e6; } }
+:root { color-scheme:light dark; --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7;
+  --border:rgba(11,11,11,.10); --critical:#d03b3b; --high:#ec835a; --medium:#fab219; --low:#3987e5; --none:#0ca30c; --nc:#c3c2b7; --nct:#0b0b0b;
+  --info:#898781; --good-ink:#006300; --hover:rgba(11,11,11,.05); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page:#0d0d0d; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781; --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10); --nc:#52514e; --nct:#f0efec; --good-ink:#0ca30c; --hover:rgba(255,255,255,.06); } }
+:root[data-theme="dark"] { --page:#0d0d0d; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781; --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10); --nc:#52514e; --nct:#f0efec; --good-ink:#0ca30c; --hover:rgba(255,255,255,.06); }
 * { box-sizing:border-box; }
-body { margin:0; padding:24px 16px; background:var(--bg); color:var(--fg); font:14px/1.45 "Segoe UI", system-ui, sans-serif; }
-main { max-width:1400px; margin:0 auto; }
-h1 { margin:0 0 4px; font-size:22px; } .sub { color:var(--muted); margin-bottom:20px; }
-.summary { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:14px 18px; margin-bottom:20px; max-width:1100px; }
-.summary h3 { margin:16px 0 4px; font-size:14px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
-.summary p { margin:6px 0; } .summary ul { margin:4px 0; padding-left:20px; } .summary li { margin:6px 0; }
-.summary .headline { font-size:16px; font-weight:600; margin-top:0; }
-.cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:20px; }
-.card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
-.card .n { font-size:26px; font-weight:600; } .card .l { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
-.card.High .n { color:var(--high); } .card.Medium .n { color:var(--medium); } .card.Low .n { color:var(--low); }
-.card.NoneFound .n { color:var(--low); } .card.NotChecked .n { color:var(--muted); }
+body { margin:0; padding:24px 16px 40px; background:var(--page); color:var(--ink); font:14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width:1200px; margin:0 auto; display:flex; flex-direction:column; gap:16px; }
+h1 { margin:0; font-size:24px; font-weight:600; }
+.meta { color:var(--ink2); font-size:12px; margin-top:4px; }
+.muted { color:var(--ink2); font-size:12px; }
+.headline { margin:0; color:var(--ink2); font-size:14px; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:20px 24px; }
+.card h2, details.sec > summary { margin:0 0 4px; font-size:16px; font-weight:600; color:var(--ink); }
+.card .sub { margin:0 0 16px; color:var(--ink2); font-size:12px; }
+.tiles { display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; }
+.tile { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:16px 20px; }
+.tv { font-size:40px; font-weight:600; line-height:1.1; }
+.tl { margin-top:6px; color:var(--ink2); font-size:12px; display:flex; align-items:center; gap:6px; }
+.dot { width:8px; height:8px; border-radius:50%; background:var(--rc); flex:none; }
+.rc-Critical, .badge.Critical { --rc:var(--critical); --rt:#fff; }
+.rc-High, .badge.High { --rc:var(--high); --rt:#0b0b0b; }
+.rc-Medium, .badge.Medium { --rc:var(--medium); --rt:#0b0b0b; }
+.rc-Low, .badge.Low { --rc:var(--low); --rt:#fff; }
+.rc-NoneFound, .badge.NoneFound { --rc:var(--none); --rt:#fff; }
+.rc-NotChecked, .badge.NotChecked { --rc:var(--nc); --rt:var(--nct); }
+.rc-Info { --rc:var(--info); --rt:#fff; }
+.stack { display:flex; gap:2px; height:28px; }
+.seg { display:flex; align-items:center; justify-content:center; background:var(--rc); color:var(--rt); font-size:12px; font-weight:600; min-width:4px; }
+.seg:first-child { border-radius:4px 0 0 4px; } .seg:last-child { border-radius:0 4px 4px 0; } .seg:only-child { border-radius:4px; }
+.legend { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; color:var(--ink2); font-size:12px; }
+.legend.small { margin-top:10px; } .legend b { color:var(--ink); }
+.lg { display:inline-flex; align-items:center; gap:6px; } .lg.zero { opacity:.6; }
+.sw { width:10px; height:10px; border-radius:2px; background:var(--rc); display:inline-block; }
+.pill, .badge { display:inline-block; padding:1px 9px; border-radius:10px; font-size:12px; font-weight:600; background:var(--rc); color:var(--rt); white-space:nowrap; }
+.badge.Info { background:transparent; color:var(--ink2); border:1px solid var(--info); }
+.hchart { display:flex; flex-direction:column; gap:10px; }
+.hrow { display:grid; grid-template-columns:minmax(110px, 240px) 84px 1fr; align-items:center; gap:4px 12px; border-radius:4px; padding:2px 0; }
+.hrow:hover, .hrow:focus-visible { background:var(--hover); outline:none; }
+.hname { font-weight:500; overflow-wrap:anywhere; }
+.htrack { display:flex; align-items:center; gap:8px; min-width:0; border-left:1px solid var(--axis); height:20px; }
+.hbar { width:calc((100% - 64px) * var(--p)); height:20px; background:var(--rc); border-radius:0 4px 4px 0; flex:none; }
+.hval { font-size:12px; font-weight:600; color:var(--ink); }
+.empty { margin:0; color:var(--ink2); display:flex; align-items:center; gap:8px; }
+.empty.ok { color:var(--good-ink); font-weight:600; } .chk { width:18px; height:18px; flex:none; }
+.heatwrap { overflow-x:auto; }
+table.heat { border-collapse:separate; border-spacing:2px; width:100%; }
+table.heat th, table.heat td { padding:0; border:0; background:transparent; position:static; text-transform:none; letter-spacing:0; }
+table.heat thead th { font-size:11px; font-weight:500; color:var(--ink2); text-align:center; vertical-align:bottom; padding:0 2px 6px; min-width:68px; }
+table.heat th.hn { text-align:left; font-size:13px; font-weight:500; color:var(--ink); padding-right:12px; min-width:120px; white-space:nowrap; position:sticky; left:0; background:var(--surface); }
+.hc { height:30px; display:flex; align-items:center; justify-content:center; border-radius:4px; background:var(--rc); color:var(--rt); font-size:12px; font-weight:600; }
+.hc.empty { background:transparent; border:1px solid var(--grid); }
+.hc:focus-visible, .seg:focus-visible, .cp:focus-visible, .uh:focus-visible { outline:2px solid var(--ink2); outline-offset:1px; }
+.whys { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; }
+.why { border:1px solid var(--border); border-radius:8px; padding:12px 14px; }
+.why .wh { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.why .chip { width:4px; height:18px; border-radius:2px; background:var(--rc); flex:none; }
+.why .wm { margin-top:2px; font-size:12px; color:var(--ink2); }
+.why p { margin:8px 0 0; color:var(--ink2); font-size:13px; }
+.ugrp { margin-top:14px; } .ugrp:first-of-type { margin-top:0; }
+.uh { display:inline-block; cursor:default; margin-bottom:6px; }
+.chips { display:flex; flex-wrap:wrap; gap:6px; }
+.cp { display:inline-block; padding:2px 10px; border-radius:12px; font-size:12px; background:var(--nc); color:var(--nct); }
+.cp i { font-style:normal; opacity:.75; margin-left:4px; }
+details > summary { cursor:pointer; list-style:none; } details > summary::-webkit-details-marker { display:none; }
+details > summary::before { content:"+"; display:inline-block; width:18px; color:var(--ink2); font-weight:600; }
+details[open] > summary::before { content:"-"; }
+details[open] > summary { margin-bottom:12px; }
+.count { color:var(--ink2); font-size:12px; font-weight:400; margin-left:8px; }
 .tools { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
-.tools input, .tools select { padding:7px 10px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--fg); font:inherit; }
+.tools input, .tools select { padding:7px 10px; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--ink); font:inherit; }
 .tools input { flex:1; min-width:200px; }
-.wrap { overflow-x:auto; background:var(--card); border:1px solid var(--line); border-radius:8px; }
+.wrap { overflow-x:auto; border:1px solid var(--border); border-radius:8px; }
 table { border-collapse:collapse; width:100%; }
-th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
-th { position:sticky; top:0; background:var(--card); font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
-td.num { text-align:right; } .detail { color:var(--muted); font-size:12px; word-break:break-all; max-width:520px; }
-.badge { display:inline-block; padding:1px 8px; border-radius:10px; font-size:12px; font-weight:600; color:#fff; white-space:nowrap; }
-.badge.High { background:var(--high); } .badge.Medium { background:var(--medium); }
-.badge.Low { background:var(--low); } .badge.Info { background:var(--info); }
-.badge.NoneFound { background:transparent; color:var(--low); border:1px solid var(--low); }
-.badge.NotChecked { background:var(--line); color:var(--muted); }
-.notes { margin-top:20px; color:var(--muted); } .notes ul { margin:4px 0 0; padding-left:20px; }
-h2 { margin:32px 0 4px; font-size:18px; }
-.card.Critical .n { color:var(--critical); } .badge.Critical { background:#7f1d1d; }
+th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--grid); vertical-align:top; }
+th { position:sticky; top:0; background:var(--surface); font-size:12px; color:var(--ink2); text-transform:uppercase; letter-spacing:.04em; }
+td.num { text-align:right; font-variant-numeric:tabular-nums; } .detail { color:var(--ink2); font-size:12px; word-break:break-all; max-width:520px; }
+.rules { color:var(--ink2); font-size:12px; }
 .mono { font-family:Consolas, "Cascadia Mono", monospace; font-size:12px; word-break:break-all; }
-.ctx { max-width:460px; color:var(--muted); } .ctx hr { border:0; border-top:1px dashed var(--line); margin:6px 0; }
+.ctx { max-width:460px; color:var(--ink2); } .ctx hr { border:0; border-top:1px solid var(--grid); margin:6px 0; }
+.notes ul { margin:4px 0 0; padding-left:20px; color:var(--ink2); }
+.foot { color:var(--ink2); font-size:12px; }
+.tip { position:fixed; z-index:10; max-width:340px; padding:8px 10px; background:var(--surface); color:var(--ink); border:1px solid var(--axis); border-radius:6px;
+  box-shadow:0 4px 14px rgba(0,0,0,.18); font-size:12px; line-height:1.4; white-space:pre-line; pointer-events:none; overflow-wrap:anywhere; }
+.tip[hidden] { display:none; }
+@media (max-width:760px) {
+  body { padding:12px 16px 32px; } .card { padding:16px; }
+  .tiles { grid-template-columns:repeat(2, 1fr); } .tv { font-size:32px; } .tile:last-child { grid-column:1 / -1; }
+  .hrow { grid-template-columns:1fr auto; } .htrack { grid-column:1 / -1; }
+}
 </style></head><body><main>
-<h1>Rogue AI Audit: NWD-LT-0417</h1>
-<div class="sub">Run 2026-10-30 14:30 &middot; elevated: False &middot; profiles: dlopez &middot; history window: 30 days</div>
-<div class="summary"><h2 style="margin-top:0">Detection summary</h2>
-<p class="headline">8 AI tools were found across 1 user profile. Sensitive data was found in the local data of 3 of them: 2 Critical, 1 Medium.</p><h3>How scoring works</h3><p>Each tool is rated by the most severe sensitive data found in the prompts, conversations and caches that tool keeps on this PC (files changed in the last 90 days). Ratings are worked out per user profile; where a tool appears in several profiles, the summary uses the most severe result.</p><ul><li><b>Critical</b> - data types: Credential / secret, Financial, Personal identity. Rules: Private key; AWS access key ID; AWS secret access key; GitHub token; OpenAI API key; Anthropic API key; Slack token; Stripe live key; Azure storage account key; Database connection string with password; Payment card number; US Social Security number; US Social Security number (labeled).</li><li><b>High</b> - data types: Credential / secret, Financial, Personal identity, Health (PHI), Confidential marking. Rules: Google API key; Credentials in URL; JSON Web Token; Password in text; API key / token assignment; Bank routing number (labeled); Bank account number (labeled); IBAN; Passport number (labeled); Driver&#39;s license (labeled); Date of birth (labeled); Medical record number; Diagnosis code (ICD-10); Privileged / trade secret marking.</li><li><b>Medium</b> - data types: Health (PHI), Confidential marking, Business sensitive. Rules: Health information terms; Confidential marking; Finance terms; HR / legal terms.</li><li><b>Low</b> - data types: Contact details, Infrastructure. Rules: Email address; US phone number; Internal IP address.</li><li><b>None found</b> - the tool&#39;s data was scanned and nothing matched.</li><li><b>Not checked</b> - the tool keeps no data this script can read (for example browser extensions, DNS lookups, or sites without cached storage), so its presence is reported but not scored.</li><li><b>Info</b> - governance tooling such as the Prompt Security extension; shown for context and never scored.</li></ul><p>Values are always masked in this report. Matching is rule-based, not AI: regular expressions with checksum validators (Luhn for card numbers, ABA for routing numbers, mod-97 for IBANs, SSN area rules), so a match is an indicator to review rather than proof of a leak.</p><h3>What was found and why it matters</h3><ul><li><b>Claude Code CLI</b> (dlopez) - Critical. Found: AWS access key ID (1), Payment card number (1), US Social Security number (1), Email address (1), Internal IP address (1). Why it matters: A live key, token or password sent to or stored by an AI tool can be read by anyone with access to that tool&#39;s history, the provider&#39;s logs or this cache, and then reused. Treat it as exposed and rotate it. Card, bank and account numbers in prompts can be kept by the tool or its provider, and are regulated data (for example under PCI DSS). They should not be pasted into AI tools. Government IDs, dates of birth and similar identifiers are enough to commit identity fraud and are regulated personal data. Keeping them in an AI tool&#39;s history widens who could see them. About this tool: AI CLI agent: transcripts can include file contents and command output, not only what the user typed.</li><li><b>Cline / Roo / Kilo</b> (dlopez) - Critical. Found: Database connection string with password (1), Password in text (1), Finance terms (4), Confidential marking (2). Why it matters: A live key, token or password sent to or stored by an AI tool can be read by anyone with access to that tool&#39;s history, the provider&#39;s logs or this cache, and then reused. Treat it as exposed and rotate it. Finance, HR and legal topics in prompts point to internal business material that may be kept or used outside the company&#39;s control. Text marked confidential, privileged or under NDA suggests business or legal material was shared with a tool that may not be approved to hold it. About this tool: Code assistant: source code and file contents may be sent to the provider, and prompts may be retained depending on the plan.</li><li><b>Ollama</b> (dlopez) - Medium. Found: Health information terms (2). Why it matters: Health information can be protected by HIPAA or similar rules, and most consumer AI tools have no agreement that allows it to be processed there. About this tool: Local LLM runtime: models run on this PC outside any company control, logging or content filtering.</li></ul><h3>Present but not scored</h3><ul><li><b>Installed apps and CLIs</b>: ChatGPT desktop, Claude desktop, Gemini CLI, Microsoft 365 Copilot. Chat assistant: on consumer plans, prompts may be retained or used for training without an enterprise agreement. AI CLI agent: transcripts can include file contents and command output, not only what the user typed.</li></ul>
-</div>
-<div class="cards">
-<div class="card"><div class="n">8</div><div class="l">Tools found</div></div>
-<div class="card Critical"><div class="n">2</div><div class="l">Critical</div></div>
-<div class="card High"><div class="n">0</div><div class="l">High</div></div>
-<div class="card Medium"><div class="n">1</div><div class="l">Medium</div></div>
-<div class="card Low"><div class="n">0</div><div class="l">Low</div></div>
-<div class="card NoneFound"><div class="n">1</div><div class="l">None found</div></div>
-<div class="card NotChecked"><div class="n">4</div><div class="l">Not checked</div></div>
-</div>
-<h2>AI apps, extensions and sites</h2>
+<header><h1>Rogue AI Audit - NWD-LT-0417</h1><div class="meta">Run 2026-10-30 15:19 &middot; elevated: False &middot; profiles: dlopez &middot; history window: 30 days &middot; prompt window: 90 days</div></header>
+<div class="tiles"><div class="tile"><div class="tv">8</div><div class="tl">AI tools found</div></div><div class="tile"><div class="tv">3</div><div class="tl">Tools with sensitive data</div></div><div class="tile"><div class="tv">4</div><div class="tl"><span class="dot rc-Critical"></span>Critical data findings</div></div><div class="tile"><div class="tv">1</div><div class="tl"><span class="dot rc-High"></span>High data findings</div></div><div class="tile"><div class="tv">1</div><div class="tl">User profiles scanned</div></div></div>
+<p class="headline">8 AI tools were found across 1 user profile. Sensitive data was found in the local data of 3 of them: 2 Critical, 1 Medium.</p>
+<section class="card"><h2>Tools by rating</h2><p class="sub">Each AI tool, rated by the sensitive data found in its own local data</p><div class="stack" role="img" aria-label="Tools by rating"><div class="seg rc-Critical" style="flex-grow:2" tabindex="0" data-tip="Critical&#10;2 of 8 tools&#10;Claude Code CLI&#10;Cline / Roo / Kilo">2</div><div class="seg rc-Medium" style="flex-grow:1" tabindex="0" data-tip="Medium&#10;1 of 8 tools&#10;Ollama">1</div><div class="seg rc-NoneFound" style="flex-grow:1" tabindex="0" data-tip="None found&#10;1 of 8 tools&#10;OpenAI Codex CLI">1</div><div class="seg rc-NotChecked" style="flex-grow:4" tabindex="0" data-tip="Not checked&#10;4 of 8 tools&#10;ChatGPT desktop&#10;Claude desktop&#10;Gemini CLI&#10;Microsoft 365 Copilot">4</div></div><div class="legend"><span class="lg" data-tip="Critical&#10;2 of 8 tools&#10;Claude Code CLI&#10;Cline / Roo / Kilo"><i class="sw rc-Critical"></i>Critical <b>2</b></span><span class="lg zero" data-tip="High&#10;0 of 8 tools"><i class="sw rc-High"></i>High <b>0</b></span><span class="lg" data-tip="Medium&#10;1 of 8 tools&#10;Ollama"><i class="sw rc-Medium"></i>Medium <b>1</b></span><span class="lg zero" data-tip="Low&#10;0 of 8 tools"><i class="sw rc-Low"></i>Low <b>0</b></span><span class="lg" data-tip="None found&#10;1 of 8 tools&#10;OpenAI Codex CLI"><i class="sw rc-NoneFound"></i>None found <b>1</b></span><span class="lg" data-tip="Not checked&#10;4 of 8 tools&#10;ChatGPT desktop&#10;Claude desktop&#10;Gemini CLI&#10;Microsoft 365 Copilot"><i class="sw rc-NotChecked"></i>Not checked <b>4</b></span></div></section>
+<section class="card"><h2>Where the sensitive data is</h2><p class="sub">Total sensitive-data hits per tool (all users); bar color = worst rating</p><div class="hchart"><div class="hrow" tabindex="0" data-tip="Cline / Roo / Kilo&#10;Worst rating: Critical&#10;8 hits, 4 rules&#10;dlopez: Critical, 8 hits"><div class="hname">Cline / Roo / Kilo</div><div class="hpill"><span class="pill rc-Critical">Critical</span></div><div class="htrack"><div class="hbar rc-Critical" style="--p:1.000"></div><span class="hval">8</span></div></div><div class="hrow" tabindex="0" data-tip="Claude Code CLI&#10;Worst rating: Critical&#10;5 hits, 5 rules&#10;dlopez: Critical, 5 hits"><div class="hname">Claude Code CLI</div><div class="hpill"><span class="pill rc-Critical">Critical</span></div><div class="htrack"><div class="hbar rc-Critical" style="--p:0.625"></div><span class="hval">5</span></div></div><div class="hrow" tabindex="0" data-tip="Ollama&#10;Worst rating: Medium&#10;2 hits, 1 rules&#10;dlopez: Medium, 2 hits"><div class="hname">Ollama</div><div class="hpill"><span class="pill rc-Medium">Medium</span></div><div class="htrack"><div class="hbar rc-Medium" style="--p:0.250"></div><span class="hval">2</span></div></div></div></section>
+<section class="card"><h2>What kind of data</h2><p class="sub">Hits per tool and data category; hover a cell for the rules</p><div class="heatwrap"><table class="heat"><thead><tr><th class="hn"></th><th>Credential / secret</th><th>Financial</th><th>Personal identity</th><th>Health (PHI)</th><th>Confidential marking</th><th>Business sensitive</th><th>Contact details</th><th>Infrastructure</th></tr></thead><tbody><tr><th class="hn" scope="row">Cline / Roo / Kilo</th><td><div class="hc rc-Critical" tabindex="0" data-tip="Cline / Roo / Kilo - Credential / secret&#10;Worst rating: Critical&#10;Password in text: 1&#10;Database connection string with password: 1">2</div></td><td><div class="hc empty"></div></td><td><div class="hc empty"></div></td><td><div class="hc empty"></div></td><td><div class="hc rc-Medium" tabindex="0" data-tip="Cline / Roo / Kilo - Confidential marking&#10;Worst rating: Medium&#10;Confidential marking: 2">2</div></td><td><div class="hc rc-Medium" tabindex="0" data-tip="Cline / Roo / Kilo - Business sensitive&#10;Worst rating: Medium&#10;Finance terms: 4">4</div></td><td><div class="hc empty"></div></td><td><div class="hc empty"></div></td></tr><tr><th class="hn" scope="row">Claude Code CLI</th><td><div class="hc rc-Critical" tabindex="0" data-tip="Claude Code CLI - Credential / secret&#10;Worst rating: Critical&#10;AWS access key ID: 1">1</div></td><td><div class="hc rc-Critical" tabindex="0" data-tip="Claude Code CLI - Financial&#10;Worst rating: Critical&#10;Payment card number: 1">1</div></td><td><div class="hc rc-Critical" tabindex="0" data-tip="Claude Code CLI - Personal identity&#10;Worst rating: Critical&#10;US Social Security number: 1">1</div></td><td><div class="hc empty"></div></td><td><div class="hc empty"></div></td><td><div class="hc empty"></div></td><td><div class="hc rc-Low" tabindex="0" data-tip="Claude Code CLI - Contact details&#10;Worst rating: Low&#10;Email address: 1">1</div></td><td><div class="hc rc-Low" tabindex="0" data-tip="Claude Code CLI - Infrastructure&#10;Worst rating: Low&#10;Internal IP address: 1">1</div></td></tr><tr><th class="hn" scope="row">Ollama</th><td><div class="hc empty"></div></td><td><div class="hc empty"></div></td><td><div class="hc empty"></div></td><td><div class="hc rc-Medium" tabindex="0" data-tip="Ollama - Health (PHI)&#10;Worst rating: Medium&#10;Health information terms: 2">2</div></td><td><div class="hc empty"></div></td><td><div class="hc empty"></div></td><td><div class="hc empty"></div></td><td><div class="hc empty"></div></td></tr></tbody></table></div><div class="legend small"><span class="lg"><i class="sw rc-Critical"></i>Critical</span><span class="lg"><i class="sw rc-High"></i>High</span><span class="lg"><i class="sw rc-Medium"></i>Medium</span><span class="lg"><i class="sw rc-Low"></i>Low</span><span class="lg muted">Cell = hits; color = worst rating in the cell</span></div></section>
+<section class="card"><h2>Why it matters</h2><p class="sub">One card per kind of data found</p><div class="whys"><div class="why rc-Critical"><div class="wh"><i class="chip"></i><b>Credential / secret</b><span class="pill rc-Critical">Critical</span></div><div class="wm">3 hits in 2 tools</div><p>Keys and passwords kept in AI history can be reused by anyone who reads it; rotate them.</p></div><div class="why rc-Critical"><div class="wh"><i class="chip"></i><b>Financial</b><span class="pill rc-Critical">Critical</span></div><div class="wm">1 hit in 1 tool</div><p>Card and bank numbers may be kept by the AI provider and are regulated data (PCI DSS).</p></div><div class="why rc-Critical"><div class="wh"><i class="chip"></i><b>Personal identity</b><span class="pill rc-Critical">Critical</span></div><div class="wm">1 hit in 1 tool</div><p>Government IDs and birth dates enable identity fraud and are regulated personal data.</p></div><div class="why rc-Medium"><div class="wh"><i class="chip"></i><b>Business sensitive</b><span class="pill rc-Medium">Medium</span></div><div class="wm">4 hits in 1 tool</div><p>Finance, HR and legal topics point to internal material that may be kept outside company control.</p></div><div class="why rc-Medium"><div class="wh"><i class="chip"></i><b>Confidential marking</b><span class="pill rc-Medium">Medium</span></div><div class="wm">2 hits in 1 tool</div><p>Text marked confidential or under NDA suggests business or legal material went to an unapproved tool.</p></div><div class="why rc-Medium"><div class="wh"><i class="chip"></i><b>Health (PHI)</b><span class="pill rc-Medium">Medium</span></div><div class="wm">2 hits in 1 tool</div><p>Health information is regulated (HIPAA) and most consumer AI tools have no agreement to hold it.</p></div><div class="why rc-Low"><div class="wh"><i class="chip"></i><b>Contact details</b><span class="pill rc-Low">Low</span></div><div class="wm">1 hit in 1 tool</div><p>Email addresses and phone numbers identify real people; large volumes suggest pasted contact lists.</p></div><div class="why rc-Low"><div class="wh"><i class="chip"></i><b>Infrastructure</b><span class="pill rc-Low">Low</span></div><div class="wm">1 hit in 1 tool</div><p>Internal IP addresses reveal the company network layout to anyone who reads the history.</p></div></div></section>
+<section class="card"><h2>Present but not scored</h2><p class="sub">Found, but they keep no data this script can read. Hover for what each kind of tool means</p><div class="ugrp"><div class="uh" tabindex="0" data-tip="Chat assistant: on consumer plans, prompts may be retained or used for training without an enterprise agreement.&#10;AI CLI agent: transcripts can include file contents and command output, not only what the user typed."><b>Installed apps and CLIs</b> <span class="muted">4 - Installed, but no readable prompt data</span></div><div class="chips"><span class="cp" tabindex="0" data-tip="ChatGPT desktop&#10;Chat assistant: on consumer plans, prompts may be retained or used for training without an enterprise agreement.">ChatGPT desktop</span><span class="cp" tabindex="0" data-tip="Claude desktop&#10;Chat assistant: on consumer plans, prompts may be retained or used for training without an enterprise agreement.">Claude desktop</span><span class="cp" tabindex="0" data-tip="Gemini CLI&#10;AI CLI agent: transcripts can include file contents and command output, not only what the user typed.">Gemini CLI</span><span class="cp" tabindex="0" data-tip="Microsoft 365 Copilot&#10;Chat assistant: on consumer plans, prompts may be retained or used for training without an enterprise agreement.">Microsoft 365 Copilot</span></div></div></section>
+<details class="card sec"><summary>How scoring works</summary><p class="muted">Ratings come from rule-based matching (patterns plus checksums, no AI); every value is masked. A tool takes the worst rating found in its own local data.</p><div class="wrap"><table class="legtbl"><thead><tr><th>Rating</th><th>Meaning</th><th>Rules</th></tr></thead><tbody><tr><td><span class="pill rc-Critical">Critical</span></td><td>Credential / secret, Financial, Personal identity</td><td class="rules">Private key; AWS access key ID; AWS secret access key; GitHub token; OpenAI API key; Anthropic API key; Slack token; Stripe live key; Azure storage account key; Database connection string with password; Payment card number; US Social Security number; US Social Security number (labeled)</td></tr><tr><td><span class="pill rc-High">High</span></td><td>Credential / secret, Financial, Personal identity, Health (PHI), Confidential marking</td><td class="rules">Google API key; Credentials in URL; JSON Web Token; Password in text; API key / token assignment; Bank routing number (labeled); Bank account number (labeled); IBAN; Passport number (labeled); Driver&#39;s license (labeled); Date of birth (labeled); Medical record number; Diagnosis code (ICD-10); Privileged / trade secret marking</td></tr><tr><td><span class="pill rc-Medium">Medium</span></td><td>Health (PHI), Confidential marking, Business sensitive</td><td class="rules">Health information terms; Confidential marking; Finance terms; HR / legal terms</td></tr><tr><td><span class="pill rc-Low">Low</span></td><td>Contact details, Infrastructure</td><td class="rules">Email address; US phone number; Internal IP address</td></tr><tr><td><span class="pill rc-NoneFound">None found</span></td><td>Data scanned, nothing matched</td><td class="rules"></td></tr><tr><td><span class="pill rc-NotChecked">Not checked</span></td><td>No readable local data</td><td class="rules"></td></tr><tr><td><span class="pill rc-Info">Info</span></td><td>Governance tooling, never scored</td><td class="rules"></td></tr></tbody></table></div></details>
+
+<details class="card sec" open>
+<summary>AI apps, extensions and sites <span class="count">12 rows</span></summary>
 <div class="tools" data-for="rows">
 <input type="search" placeholder="Filter by app, site, user, source...">
 <select class="f-risk"><option value="">All risks</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>None found</option><option>Not checked</option><option>Info</option></select>
@@ -67,20 +119,14 @@ h2 { margin:32px 0 4px; font-size:18px; }
 <tr data-risk="Medium"><td><span class="badge Medium">Medium</span></td><td class="num">1</td><td>dlopez</td><td><b>Ollama version 0.40.8</b><div class="detail">Tool: Ollama<br>Ollama 0.40.8 C:\Users\dlopez\AppData\Local\Programs\Ollama\</div></td><td>Local LLM runtime</td><td>Installed program</td><td class="num"></td><td></td><td></td></tr>
 <tr data-risk="None found"><td><span class="badge NoneFound">None found</span></td><td class="num">0</td><td>dlopez</td><td><b>OpenAI Codex CLI</b><div class="detail">C:\Users\dlopez\.codex</div></td><td>AI CLI agent</td><td>Profile folder</td><td class="num"></td><td></td><td>2026-10-30 14:30</td></tr>
 <tr data-risk="Not checked"><td><span class="badge NotChecked">Not checked</span></td><td class="num"></td><td></td><td><b>ChatGPT desktop</b><div class="detail">ChatGPT.exe C:\Program Files\WindowsApps\OpenAI.Codex_26.1023.6621.0_x64__2p2nqsd0c76g0\app\ChatGPT.exe</div></td><td>Chat assistant</td><td>Running process</td><td class="num"></td><td></td><td></td></tr>
-<tr data-risk="Not checked"><td><span class="badge NotChecked">Not checked</span></td><td class="num"></td><td></td><td><b>Claude desktop</b><div class="detail">claude.exe C:\Users\dlopez\AppData\Roaming\Claude\claude-code\2.1.309\9078b9c1d466\claude.exe</div></td><td>Chat assistant</td><td>Running process</td><td class="num"></td><td></td><td></td></tr>
+<tr data-risk="Not checked"><td><span class="badge NotChecked">Not checked</span></td><td class="num"></td><td></td><td><b>Claude desktop</b><div class="detail">claude.exe C:\Program Files\WindowsApps\Claude_4.4212.0.0_x64__pzs8sxrjxfjjc\app\claude.exe</div></td><td>Chat assistant</td><td>Running process</td><td class="num"></td><td></td><td></td></tr>
 <tr data-risk="Not checked"><td><span class="badge NotChecked">Not checked</span></td><td class="num"></td><td>dlopez</td><td><b>Claude desktop</b><div class="detail">Claude 4.4212.0.0</div></td><td>Chat assistant</td><td>Store/MSIX package</td><td class="num"></td><td></td><td></td></tr>
 <tr data-risk="Not checked"><td><span class="badge NotChecked">Not checked</span></td><td class="num"></td><td>dlopez</td><td><b>Gemini CLI</b><div class="detail">C:\Users\dlopez\.gemini</div></td><td>AI CLI agent</td><td>Profile folder</td><td class="num"></td><td></td><td>2026-10-30 14:30</td></tr>
 <tr data-risk="Not checked"><td><span class="badge NotChecked">Not checked</span></td><td class="num"></td><td>dlopez</td><td><b>Microsoft 365 Copilot</b><div class="detail">Microsoft.MicrosoftOfficeHub 19.2610.35011.0</div></td><td>Chat assistant</td><td>Store/MSIX package</td><td class="num"></td><td></td><td></td></tr>
 </tbody></table></div>
-<h2>High-value data in AI prompts and caches</h2>
-<div class="sub">Rule-based scan (patterns, checksums, keywords; no AI) of prompts and conversations AI tools stored on this PC in the last 90 days. Values are masked. This section still describes sensitive data: treat the report as confidential.</div>
-<div class="cards">
-<div class="card"><div class="n">10</div><div class="l">Data findings</div></div>
-<div class="card Critical"><div class="n">4</div><div class="l">Critical</div></div>
-<div class="card High"><div class="n">1</div><div class="l">High</div></div>
-<div class="card Medium"><div class="n">3</div><div class="l">Medium</div></div>
-<div class="card Low"><div class="n">2</div><div class="l">Low</div></div>
-</div>
+</details>
+<details class="card sec">
+<summary>Data findings <span class="count">10 rows</span></summary>
 <div class="tools" data-for="drows">
 <input type="search" placeholder="Filter by app, rule, user, file...">
 <select class="f-risk"><option value="">All severities</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
@@ -98,20 +144,53 @@ h2 { margin:32px 0 4px; font-size:18px; }
 <tr data-risk="Low"><td><span class="badge Low">Low</span></td><td>dlopez</td><td>Claude Code CLI</td><td><b>Internal IP address</b><div class="detail">Infrastructure</div></td><td class="num">1</td><td class="num">1</td><td class="mono">10.1.2.3</td><td class="mono ctx">...nd test #### #### #### #### and ###-##-#### mail me at ja***@*** host [10.1.2.3]&quot;}} ...</td><td class="detail">C:\Users\dlopez\.claude\projects\x\s.jsonl<br>2026-10-30 14:30</td></tr>
 <tr data-risk="Low"><td><span class="badge Low">Low</span></td><td>dlopez</td><td>Claude Code CLI</td><td><b>Email address</b><div class="detail">Contact details</div></td><td class="num">1</td><td class="num">1</td><td class="mono">ja****************om</td><td class="mono ctx">...n ###-##-#### and test #### #### #### #### and ###-##-#### mail me at [ja****************om] host 10.1.2.3&quot;}} ...</td><td class="detail">C:\Users\dlopez\.claude\projects\x\s.jsonl<br>2026-10-30 14:30</td></tr>
 </tbody></table></div>
-<div class="notes"><b>Notes</b><ul><li>Profile scan limited to C:\Users\dlopez (-ProfilePath).</li><li>Prompt scan: 4 files changed in the last 90 days, plus AI page titles from history.</li></ul>
-<p>CSV and JSON: C:\ProgramData\RogueAIAudit\NWD-LT-0417_20261030-143035</p></div>
+</details>
+<details class="card sec notes"><summary>Notes</summary><ul><li>Profile scan limited to C:\Users\dlopez (-ProfilePath).</li><li>Prompt scan: 4 files changed in the last 90 days, plus AI page titles from history.</li></ul><p class="muted">CSV and JSON: C:\ProgramData\RogueAIAudit\NWD-LT-0417</p></details>
+<div class="foot">Values are masked, but this report still describes sensitive data: treat it as confidential.</div>
 </main>
 <script>
-document.querySelectorAll('.tools').forEach(function (bar) {
-  var q = bar.querySelector('input'), r = bar.querySelector('.f-risk');
-  var rows = document.querySelectorAll('#' + bar.dataset.for + ' tr');
-  function apply() {
-    var t = q.value.toLowerCase();
-    rows.forEach(function (tr) {
-      var ok = (!r.value || tr.dataset.risk === r.value) && (!t || tr.textContent.toLowerCase().indexOf(t) !== -1);
-      tr.style.display = ok ? '' : 'none';
-    });
+(function () {
+  var tip = document.createElement('div');
+  tip.className = 'tip'; tip.setAttribute('role', 'tooltip'); tip.hidden = true;
+  document.body.appendChild(tip);
+  function place(x, y) {
+    var w = tip.offsetWidth, h = tip.offsetHeight, l = x + 14, t = y + 14;
+    if (l + w > window.innerWidth - 8) l = Math.max(8, x - w - 14);
+    if (t + h > window.innerHeight - 8) t = Math.max(8, y - h - 14);
+    tip.style.left = l + 'px'; tip.style.top = t + 'px';
   }
-  q.addEventListener('input', apply); r.addEventListener('change', apply);
-});
+  function show(el, x, y) {
+    var s = el.getAttribute('data-tip');
+    if (!s) return;
+    tip.textContent = s; tip.hidden = false; place(x, y);
+  }
+  function hide() { tip.hidden = true; }
+  function onPointer(e) {
+    var el = e.target.closest ? e.target.closest('[data-tip]') : null;
+    if (el) show(el, e.clientX, e.clientY); else hide();
+  }
+  document.addEventListener('pointermove', onPointer);
+  document.addEventListener('pointerdown', onPointer);
+  document.addEventListener('focusin', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-tip]') : null;
+    if (!el) return;
+    var r = el.getBoundingClientRect();
+    show(el, r.left + r.width / 2, r.bottom);
+  });
+  document.addEventListener('focusout', hide);
+  document.addEventListener('scroll', hide, true);
+  document.documentElement.addEventListener('pointerleave', hide);
+  document.querySelectorAll('.tools').forEach(function (bar) {
+    var q = bar.querySelector('input'), r = bar.querySelector('.f-risk');
+    var rows = document.querySelectorAll('#' + bar.dataset.for + ' tr');
+    function apply() {
+      var t = q.value.toLowerCase();
+      rows.forEach(function (tr) {
+        var ok = (!r.value || tr.dataset.risk === r.value) && (!t || tr.textContent.toLowerCase().indexOf(t) !== -1);
+        tr.style.display = ok ? '' : 'none';
+      });
+    }
+    q.addEventListener('input', apply); r.addEventListener('change', apply);
+  });
+})();
 </script></body></html>

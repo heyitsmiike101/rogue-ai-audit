@@ -1566,15 +1566,15 @@ foreach ($s in 'Critical', 'High', 'Medium', 'Low') { $dataBySev[$s] = @($DataFi
 
 # Why each kind of data matters (plain-English, one or two sentences).
 $CategoryWhy = @{
-    'Credential / secret'   = 'A live key, token or password sent to or stored by an AI tool can be read by anyone with access to that tool''s history, the provider''s logs or this cache, and then reused. Treat it as exposed and rotate it.'
-    'Financial'             = 'Card, bank and account numbers in prompts can be kept by the tool or its provider, and are regulated data (for example under PCI DSS). They should not be pasted into AI tools.'
-    'Personal identity'     = 'Government IDs, dates of birth and similar identifiers are enough to commit identity fraud and are regulated personal data. Keeping them in an AI tool''s history widens who could see them.'
-    'Health (PHI)'          = 'Health information can be protected by HIPAA or similar rules, and most consumer AI tools have no agreement that allows it to be processed there.'
-    'Confidential marking'  = 'Text marked confidential, privileged or under NDA suggests business or legal material was shared with a tool that may not be approved to hold it.'
-    'Business sensitive'    = 'Finance, HR and legal topics in prompts point to internal business material that may be kept or used outside the company''s control.'
-    'Customer keyword'      = 'Matches on the customer-supplied keywords (project, client or product names) show that protected business context was entered into this tool.'
-    'Contact details'       = 'Email addresses and phone numbers identify real people, such as staff or customers. A few are routine; large volumes suggest pasted contact lists.'
-    'Infrastructure'        = 'Internal IP addresses describe the layout of the company network, which helps an attacker map it if the history is ever exposed.'
+    'Credential / secret'   = 'Keys and passwords kept in AI history can be reused by anyone who reads it; rotate them.'
+    'Financial'             = 'Card and bank numbers may be kept by the AI provider and are regulated data (PCI DSS).'
+    'Personal identity'     = 'Government IDs and birth dates enable identity fraud and are regulated personal data.'
+    'Health (PHI)'          = 'Health information is regulated (HIPAA) and most consumer AI tools have no agreement to hold it.'
+    'Confidential marking'  = 'Text marked confidential or under NDA suggests business or legal material went to an unapproved tool.'
+    'Business sensitive'    = 'Finance, HR and legal topics point to internal material that may be kept outside company control.'
+    'Customer keyword'      = 'Customer-supplied keywords matched, so protected project or client context was entered into this tool.'
+    'Contact details'       = 'Email addresses and phone numbers identify real people; large volumes suggest pasted contact lists.'
+    'Infrastructure'        = 'Internal IP addresses reveal the company network layout to anyone who reads the history.'
 }
 
 # What the presence of each kind of tool means, whatever was found in it.
@@ -1732,20 +1732,6 @@ foreach ($it in $SummaryItems) {
         default { $SummaryText.Add($plain) }
     }
 }
-$summaryHtml = New-Object System.Text.StringBuilder
-$inList = $false
-foreach ($it in $SummaryItems) {
-    $h = (ConvertTo-HtmlText $it.Text) -replace '\*\*(.+?)\*\*', '<b>$1</b>'
-    if ($it.Kind -ne 'li' -and $inList) { [void]$summaryHtml.Append('</ul>'); $inList = $false }
-    switch ($it.Kind) {
-        'headline' { [void]$summaryHtml.Append("<p class=`"headline`">$h</p>") }
-        'h'        { [void]$summaryHtml.Append("<h3>$h</h3>") }
-        'li'       { if (-not $inList) { [void]$summaryHtml.Append('<ul>'); $inList = $true }; [void]$summaryHtml.Append("<li>$h</li>") }
-        default    { [void]$summaryHtml.Append("<p>$h</p>") }
-    }
-}
-if ($inList) { [void]$summaryHtml.Append('</ul>') }
-
 $summary = [ordered]@{
     Computer          = $env:COMPUTERNAME
     RunAt             = $Started.ToString('s')
@@ -1819,19 +1805,208 @@ foreach ($f in $SortedData) {
         ((ConvertTo-HtmlText $f.Context) -replace ' \|\| ', '<hr>'), (ConvertTo-HtmlText $f.Location), $mod)
     [void]$dataRowsHtml.AppendLine()
 }
-if ($SkipPromptScan) {
-    $dataSection = '<h2>High-value data in AI prompts and caches</h2><p class="sub">Not run (-SkipPromptScan).</p>'
+# --- Chart-led HTML report: helpers and section builders (inline SVG/CSS only; every dynamic value is HTML-encoded) ---
+
+function Get-RiskSlug([string]$Risk) { (Get-Culture).TextInfo.ToTitleCase($Risk) -replace '\s', '' }              # 'None found' -> 'NoneFound' (CSS class)
+function Get-HitValue($Raw) {                                                 # '12' / '12+' -> N and Plus
+    $s = [string]$Raw; $plus = $s.EndsWith('+'); $n = 0
+    [void][int]::TryParse($s.TrimEnd('+'), [ref]$n)
+    [pscustomobject]@{ N = $n; Plus = $plus }
+}
+function Format-Hits([int]$N, [bool]$Plus) { if ($Plus) { "$N+" } else { "$N" } }
+function New-Tip([string[]]$Lines) { (@($Lines | ForEach-Object { ConvertTo-HtmlText $_ }) -join '&#10;') }
+function New-Pill([string]$Risk) { '<span class="pill rc-' + (Get-RiskSlug $Risk) + '">' + (ConvertTo-HtmlText $Risk) + '</span>' }
+function Format-Frac([double]$V) { $V.ToString('0.000', [System.Globalization.CultureInfo]::InvariantCulture) }
+function Get-WorstSeverity($Items) { (@($Items) | Sort-Object @{ Expression = { $SevOrder[$_.Severity] } } | Select-Object -First 1).Severity }
+
+$scanOn = [bool]$PromptScanRan
+$toolsWithData = @($ToolInfo | Where-Object { $_.DataHits -gt 0 })
+$critFind = [string]$dataBySev.Critical; $highFind = [string]$dataBySev.High
+if (-not $scanOn) { $critFind = 'n/a'; $highFind = 'n/a' }
+$withDataTxt = if ($scanOn) { [string]$toolsWithData.Count } else { 'n/a' }
+
+# 2. Stat tiles
+$tilesHtml = @(
+    @('AI tools found', [string]$toolCount, ''),
+    @('Tools with sensitive data', $withDataTxt, ''),
+    @('Critical data findings', $critFind, 'Critical'),
+    @('High data findings', $highFind, 'High'),
+    @('User profiles scanned', [string]$profCount, '')
+) | ForEach-Object {
+    $dot = if ($_[2]) { '<span class="dot rc-' + $_[2] + '"></span>' } else { '' }
+    '<div class="tile"><div class="tv">' + (ConvertTo-HtmlText $_[1]) + '</div><div class="tl">' + $dot + (ConvertTo-HtmlText $_[0]) + '</div></div>'
+}
+$tilesHtml = $tilesHtml -join ''
+
+$headlineText = (@($SummaryItems | Where-Object { $_.Kind -eq 'headline' } | Select-Object -First 1)).Text
+$headlineHtml = '<p class="headline">' + (ConvertTo-HtmlText $headlineText) + '</p>'
+
+# 3. Tools by rating: one 100% stacked bar plus legend
+if ($toolCount -eq 0) {
+    $ratingHtml = '<p class="empty">No AI tools were found.</p>'
 } else {
-    $dataSection = @"
-<h2>High-value data in AI prompts and caches</h2>
-<div class="sub">Rule-based scan (patterns, checksums, keywords; no AI) of prompts and conversations AI tools stored on this PC in the last $PromptDays days. Values are masked. This section still describes sensitive data: treat the report as confidential.</div>
-<div class="cards">
-<div class="card"><div class="n">$($DataFindings.Count)</div><div class="l">Data findings</div></div>
-<div class="card Critical"><div class="n">$($dataBySev.Critical)</div><div class="l">Critical</div></div>
-<div class="card High"><div class="n">$($dataBySev.High)</div><div class="l">High</div></div>
-<div class="card Medium"><div class="n">$($dataBySev.Medium)</div><div class="l">Medium</div></div>
-<div class="card Low"><div class="n">$($dataBySev.Low)</div><div class="l">Low</div></div>
-</div>
+    $seg = New-Object System.Text.StringBuilder
+    $leg = New-Object System.Text.StringBuilder
+    foreach ($n in $RatedRisks) {
+        $c = [int]$toolsByRisk[$n]
+        $slug = Get-RiskSlug $n
+        $names = @($ToolInfo | Where-Object Risk -eq $n | ForEach-Object Tool)
+        $tipLines = @("$n", "$c of $toolCount tools") + @($names | Select-Object -First 10)
+        if ($names.Count -gt 10) { $tipLines += "+$($names.Count - 10) more" }
+        $tip = New-Tip $tipLines
+        if ($c -gt 0) {
+            $pct = 100.0 * $c / $toolCount
+            $lbl = if ($pct -ge 6) { [string]$c } else { '' }
+            [void]$seg.Append('<div class="seg rc-' + $slug + '" style="flex-grow:' + $c + '" tabindex="0" data-tip="' + $tip + '">' + $lbl + '</div>')
+        }
+        [void]$leg.Append('<span class="lg' + $(if ($c -eq 0) { ' zero' } else { '' }) + '" data-tip="' + $tip + '"><i class="sw rc-' + $slug + '"></i>' + (ConvertTo-HtmlText $n) + ' <b>' + $c + '</b></span>')
+    }
+    $ratingHtml = '<div class="stack" role="img" aria-label="Tools by rating">' + $seg.ToString() + '</div><div class="legend">' + $leg.ToString() + '</div>'
+}
+
+# Per-tool aggregates for the data charts
+$toolAgg = @()
+$catsFound = New-Object System.Collections.Generic.List[string]
+if ($scanOn) {
+    $toolAgg = @(foreach ($ti in $toolsWithData) {
+        $d = @($DataByTool[$ti.Tool].ToArray())
+        $tot = 0; $plus = $false
+        foreach ($x in $d) { $h = Get-HitValue $x.Matches; $tot += $h.N; if ($h.Plus) { $plus = $true } }
+        $userLines = @(foreach ($ug in ($d | Group-Object User | Sort-Object Name)) {
+            $ut = 0; foreach ($x in $ug.Group) { $ut += (Get-HitValue $x.Matches).N }
+            '{0}: {1}, {2} hits' -f $ug.Name, (Get-WorstSeverity $ug.Group), $ut
+        })
+        [pscustomobject]@{ Tool = $ti.Tool; Risk = $ti.Risk; Total = $tot; Plus = $plus; Rules = @($d | ForEach-Object Rule | Sort-Object -Unique).Count; UserLines = $userLines; Data = $d }
+    })
+    $toolAgg = @($toolAgg | Sort-Object @{ Expression = { $RiskOrder[$_.Risk] } }, @{ Expression = 'Total'; Descending = $true }, Tool)
+    foreach ($c in @($DataFindings | ForEach-Object Category | Sort-Object -Unique)) { $catsFound.Add($c) }
+}
+
+# 4. Where the sensitive data is (horizontal bars, shared linear scale)
+if (-not $scanOn) {
+    $whereHtml = ''
+} elseif (-not $toolAgg.Count) {
+    $whereHtml = '<p class="empty ok"><svg class="chk" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>No sensitive data found in the AI tool data scanned</p>'
+} else {
+    $maxTot = [double](($toolAgg | Measure-Object Total -Maximum).Maximum)
+    if ($maxTot -lt 1) { $maxTot = 1 }
+    $rows = New-Object System.Text.StringBuilder
+    foreach ($t in $toolAgg) {
+        $frac = [Math]::Max([double]$t.Total / $maxTot, 0.012)
+        $tip = New-Tip (@($t.Tool, ('Worst rating: ' + $t.Risk), ('{0} hits, {1} rules' -f (Format-Hits $t.Total $t.Plus), $t.Rules)) + @($t.UserLines))
+        [void]$rows.Append('<div class="hrow" tabindex="0" data-tip="' + $tip + '"><div class="hname">' + (ConvertTo-HtmlText $t.Tool) + '</div><div class="hpill">' + (New-Pill $t.Risk) +
+            '</div><div class="htrack"><div class="hbar rc-' + (Get-RiskSlug $t.Risk) + '" style="--p:' + (Format-Frac $frac) + '"></div><span class="hval">' + (Format-Hits $t.Total $t.Plus) + '</span></div></div>')
+    }
+    $whereHtml = '<div class="hchart">' + $rows.ToString() + '</div>'
+}
+
+# 5. What kind of data (heatmap: tool x data category, cell color = worst severity)
+$catOrder = 'Credential / secret', 'Financial', 'Personal identity', 'Health (PHI)', 'Confidential marking', 'Business sensitive', 'Customer keyword', 'Contact details', 'Infrastructure'
+$heatCats = @($catOrder | Where-Object { $catsFound -contains $_ }) + @($catsFound | Where-Object { $catOrder -notcontains $_ } | Sort-Object)
+$heatHtml = ''
+if ($scanOn -and $toolAgg.Count -and $heatCats.Count) {
+    $hh = New-Object System.Text.StringBuilder
+    [void]$hh.Append('<div class="heatwrap"><table class="heat"><thead><tr><th class="hn"></th>')
+    foreach ($c in $heatCats) { [void]$hh.Append('<th>' + (ConvertTo-HtmlText $c) + '</th>') }
+    [void]$hh.Append('</tr></thead><tbody>')
+    foreach ($t in $toolAgg) {
+        [void]$hh.Append('<tr><th class="hn" scope="row">' + (ConvertTo-HtmlText $t.Tool) + '</th>')
+        foreach ($c in $heatCats) {
+            $cell = @($t.Data | Where-Object { $_.Category -eq $c })
+            if (-not $cell.Count) { [void]$hh.Append('<td><div class="hc empty"></div></td>'); continue }
+            $tot = 0; $plus = $false
+            foreach ($x in $cell) { $h = Get-HitValue $x.Matches; $tot += $h.N; if ($h.Plus) { $plus = $true } }
+            $worst = Get-WorstSeverity $cell
+            $ruleLines = @(foreach ($rg in ($cell | Group-Object Rule)) {
+                $rt = 0; foreach ($x in $rg.Group) { $rt += (Get-HitValue $x.Matches).N }
+                [pscustomobject]@{ L = ('{0}: {1}' -f $rg.Name, $rt); N = $rt }
+            })
+            $ruleLines = @($ruleLines | Sort-Object @{ Expression = 'N'; Descending = $true } | ForEach-Object L)
+            $tip = New-Tip (@("$($t.Tool) - $c", "Worst rating: $worst") + @($ruleLines | Select-Object -First 12))
+            [void]$hh.Append('<td><div class="hc rc-' + $worst + '" tabindex="0" data-tip="' + $tip + '">' + (Format-Hits $tot $plus) + '</div></td>')
+        }
+        [void]$hh.Append('</tr>')
+    }
+    [void]$hh.Append('</tbody></table></div><div class="legend small">')
+    foreach ($n in 'Critical', 'High', 'Medium', 'Low') { [void]$hh.Append('<span class="lg"><i class="sw rc-' + $n + '"></i>' + $n + '</span>') }
+    [void]$hh.Append('<span class="lg muted">Cell = hits; color = worst rating in the cell</span></div>')
+    $heatHtml = $hh.ToString()
+}
+
+# 6. Why it matters (one card per data category actually found)
+$whyHtml = ''
+if ($scanOn -and $catsFound.Count) {
+    $cards = @(foreach ($c in $catsFound) {
+        $items = @($DataFindings | Where-Object { $_.Category -eq $c })
+        $tot = 0; $plus = $false
+        foreach ($x in $items) { $h = Get-HitValue $x.Matches; $tot += $h.N; if ($h.Plus) { $plus = $true } }
+        [pscustomobject]@{ Cat = $c; Worst = (Get-WorstSeverity $items); Sev = $SevOrder[(Get-WorstSeverity $items)]; Tot = $tot; Plus = $plus; Tools = @($items | ForEach-Object Tool | Sort-Object -Unique).Count }
+    })
+    $cards = @($cards | Sort-Object Sev, Cat)
+    $wb = New-Object System.Text.StringBuilder
+    foreach ($k in $cards) {
+        $why = if ($CategoryWhy.ContainsKey($k.Cat)) { $CategoryWhy[$k.Cat] } else { '' }
+        $toolWord = if ($k.Tools -eq 1) { 'tool' } else { 'tools' }
+        [void]$wb.Append('<div class="why rc-' + $k.Worst + '"><div class="wh"><i class="chip"></i><b>' + (ConvertTo-HtmlText $k.Cat) + '</b>' + (New-Pill $k.Worst) +
+            '</div><div class="wm">' + (Format-Hits $k.Tot $k.Plus) + $(if ($k.Tot -eq 1 -and -not $k.Plus) { ' hit in ' } else { ' hits in ' }) + $k.Tools + ' ' + $toolWord + '</div><p>' + (ConvertTo-HtmlText $why) + '</p></div>')
+    }
+    $whyHtml = $wb.ToString()
+}
+
+# 7. Present but not scored (chips grouped by kind; tool-type notes live in tooltips)
+$groupHint = @{
+    'Installed apps and CLIs'         = 'Installed, but no readable prompt data'
+    'Browser extensions'              = 'Extension installed, no readable data'
+    'Sites visited without local data' = 'Seen in browser history only'
+}
+$unscoredHtml = ''
+$unscoredList = @($ToolInfo | Where-Object { $_.Risk -eq 'Not checked' })
+if (-not $unscoredList.Count) {
+    $unscoredHtml = '<p class="empty">Every tool found had local data that could be scanned.</p>'
+} else {
+    $ub = New-Object System.Text.StringBuilder
+    foreach ($grp in 'Installed apps and CLIs', 'Browser extensions', 'Sites visited without local data') {
+        $members = @($unscoredList | Where-Object Group -eq $grp)
+        if (-not $members.Count) { continue }
+        $typeNotes = @($members | ForEach-Object { Get-ToolTypeNote $_.Category $_.Tool } | Select-Object -Unique)
+        [void]$ub.Append('<div class="ugrp"><div class="uh" tabindex="0" data-tip="' + (New-Tip $typeNotes) + '"><b>' + (ConvertTo-HtmlText $grp) + '</b> <span class="muted">' + $members.Count + ' - ' + (ConvertTo-HtmlText $groupHint[$grp]) + '</span></div><div class="chips">')
+        foreach ($m in ($members | Sort-Object Tool)) {
+            $lab = ConvertTo-HtmlText $m.Tool
+            $extra = if ($grp -eq 'Sites visited without local data' -and $m.Visits -gt 0) { ' <i>' + $m.Visits + '</i>' } else { '' }
+            $tl = @($m.Tool, (Get-ToolTypeNote $m.Category $m.Tool))
+            if ($extra) { $tl += "$($m.Visits) visits" }
+            [void]$ub.Append('<span class="cp" tabindex="0" data-tip="' + (New-Tip $tl) + '">' + $lab + $extra + '</span>')
+        }
+        [void]$ub.Append('</div></div>')
+    }
+    $unscoredHtml = $ub.ToString()
+}
+
+# 8. How scoring works (collapsed legend table)
+$meaning = @{
+    'None found'  = 'Data scanned, nothing matched'
+    'Not checked' = 'No readable local data'
+    'Info'        = 'Governance tooling, never scored'
+}
+$sb = New-Object System.Text.StringBuilder
+foreach ($sev in 'Critical', 'High', 'Medium', 'Low') {
+    $rs = if ($scanOn -and $DataRules) { @($DataRules | Where-Object { $_.Sev -eq $sev }) } else { @() }
+    $cats = if ($rs.Count) { (@($rs | ForEach-Object Cat | Select-Object -Unique) -join ', ') } else { '' }
+    $names = if ($rs.Count) { (@($rs | ForEach-Object Name | Select-Object -Unique) -join '; ') } else { 'Prompt scan did not run' }
+    [void]$sb.Append('<tr><td>' + (New-Pill $sev) + '</td><td>' + (ConvertTo-HtmlText $cats) + '</td><td class="rules">' + (ConvertTo-HtmlText $names) + '</td></tr>')
+}
+foreach ($n in 'None found', 'Not checked', 'Info') {
+    [void]$sb.Append('<tr><td>' + (New-Pill $n) + '</td><td>' + (ConvertTo-HtmlText $meaning[$n]) + '</td><td class="rules"></td></tr>')
+}
+$scoringHtml = '<p class="muted">Ratings come from rule-based matching (patterns plus checksums, no AI); every value is masked. A tool takes the worst rating found in its own local data.</p>' +
+    '<div class="wrap"><table class="legtbl"><thead><tr><th>Rating</th><th>Meaning</th><th>Rules</th></tr></thead><tbody>' + $sb.ToString() + '</tbody></table></div>'
+
+# 9. Detail tables
+$dataTableHtml = ''
+if ($scanOn) {
+    $dataTableHtml = @"
+<details class="card sec">
+<summary>Data findings <span class="count">$($DataFindings.Count) rows</span></summary>
 <div class="tools" data-for="drows">
 <input type="search" placeholder="Filter by app, rule, user, file...">
 <select class="f-risk"><option value="">All severities</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
@@ -1839,65 +2014,186 @@ if ($SkipPromptScan) {
 <div class="wrap"><table><thead><tr><th>Severity</th><th>User</th><th>App / source</th><th>Rule</th><th>Hits</th><th>Unique</th><th>Examples (masked)</th><th>Context (masked)</th><th>File</th></tr></thead>
 <tbody id="drows">
 $($dataRowsHtml.ToString())</tbody></table></div>
+</details>
 "@
 }
+
+# Page chrome (single-quoted here-strings: no PowerShell interpolation inside CSS/JS)
+$darkVars = '--page:#0d0d0d; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --muted:#898781; --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10); --nc:#52514e; --nct:#f0efec; --good-ink:#0ca30c; --hover:rgba(255,255,255,.06);'
+$css = @'
+:root { color-scheme:light dark; --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7;
+  --border:rgba(11,11,11,.10); --critical:#d03b3b; --high:#ec835a; --medium:#fab219; --low:#3987e5; --none:#0ca30c; --nc:#c3c2b7; --nct:#0b0b0b;
+  --info:#898781; --good-ink:#006300; --hover:rgba(11,11,11,.05); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { /*DARK*/ } }
+:root[data-theme="dark"] { /*DARK*/ }
+* { box-sizing:border-box; }
+body { margin:0; padding:24px 16px 40px; background:var(--page); color:var(--ink); font:14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width:1200px; margin:0 auto; display:flex; flex-direction:column; gap:16px; }
+h1 { margin:0; font-size:24px; font-weight:600; }
+.meta { color:var(--ink2); font-size:12px; margin-top:4px; }
+.muted { color:var(--ink2); font-size:12px; }
+.headline { margin:0; color:var(--ink2); font-size:14px; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:20px 24px; }
+.card h2, details.sec > summary { margin:0 0 4px; font-size:16px; font-weight:600; color:var(--ink); }
+.card .sub { margin:0 0 16px; color:var(--ink2); font-size:12px; }
+.tiles { display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; }
+.tile { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:16px 20px; }
+.tv { font-size:40px; font-weight:600; line-height:1.1; }
+.tl { margin-top:6px; color:var(--ink2); font-size:12px; display:flex; align-items:center; gap:6px; }
+.dot { width:8px; height:8px; border-radius:50%; background:var(--rc); flex:none; }
+.rc-Critical, .badge.Critical { --rc:var(--critical); --rt:#fff; }
+.rc-High, .badge.High { --rc:var(--high); --rt:#0b0b0b; }
+.rc-Medium, .badge.Medium { --rc:var(--medium); --rt:#0b0b0b; }
+.rc-Low, .badge.Low { --rc:var(--low); --rt:#fff; }
+.rc-NoneFound, .badge.NoneFound { --rc:var(--none); --rt:#fff; }
+.rc-NotChecked, .badge.NotChecked { --rc:var(--nc); --rt:var(--nct); }
+.rc-Info { --rc:var(--info); --rt:#fff; }
+.stack { display:flex; gap:2px; height:28px; }
+.seg { display:flex; align-items:center; justify-content:center; background:var(--rc); color:var(--rt); font-size:12px; font-weight:600; min-width:4px; }
+.seg:first-child { border-radius:4px 0 0 4px; } .seg:last-child { border-radius:0 4px 4px 0; } .seg:only-child { border-radius:4px; }
+.legend { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; color:var(--ink2); font-size:12px; }
+.legend.small { margin-top:10px; } .legend b { color:var(--ink); }
+.lg { display:inline-flex; align-items:center; gap:6px; } .lg.zero { opacity:.6; }
+.sw { width:10px; height:10px; border-radius:2px; background:var(--rc); display:inline-block; }
+.pill, .badge { display:inline-block; padding:1px 9px; border-radius:10px; font-size:12px; font-weight:600; background:var(--rc); color:var(--rt); white-space:nowrap; }
+.badge.Info { background:transparent; color:var(--ink2); border:1px solid var(--info); }
+.hchart { display:flex; flex-direction:column; gap:10px; }
+.hrow { display:grid; grid-template-columns:minmax(110px, 240px) 84px 1fr; align-items:center; gap:4px 12px; border-radius:4px; padding:2px 0; }
+.hrow:hover, .hrow:focus-visible { background:var(--hover); outline:none; }
+.hname { font-weight:500; overflow-wrap:anywhere; }
+.htrack { display:flex; align-items:center; gap:8px; min-width:0; border-left:1px solid var(--axis); height:20px; }
+.hbar { width:calc((100% - 64px) * var(--p)); height:20px; background:var(--rc); border-radius:0 4px 4px 0; flex:none; }
+.hval { font-size:12px; font-weight:600; color:var(--ink); }
+.empty { margin:0; color:var(--ink2); display:flex; align-items:center; gap:8px; }
+.empty.ok { color:var(--good-ink); font-weight:600; } .chk { width:18px; height:18px; flex:none; }
+.heatwrap { overflow-x:auto; }
+table.heat { border-collapse:separate; border-spacing:2px; width:100%; }
+table.heat th, table.heat td { padding:0; border:0; background:transparent; position:static; text-transform:none; letter-spacing:0; }
+table.heat thead th { font-size:11px; font-weight:500; color:var(--ink2); text-align:center; vertical-align:bottom; padding:0 2px 6px; min-width:68px; }
+table.heat th.hn { text-align:left; font-size:13px; font-weight:500; color:var(--ink); padding-right:12px; min-width:120px; white-space:nowrap; position:sticky; left:0; background:var(--surface); }
+.hc { height:30px; display:flex; align-items:center; justify-content:center; border-radius:4px; background:var(--rc); color:var(--rt); font-size:12px; font-weight:600; }
+.hc.empty { background:transparent; border:1px solid var(--grid); }
+.hc:focus-visible, .seg:focus-visible, .cp:focus-visible, .uh:focus-visible { outline:2px solid var(--ink2); outline-offset:1px; }
+.whys { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; }
+.why { border:1px solid var(--border); border-radius:8px; padding:12px 14px; }
+.why .wh { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.why .chip { width:4px; height:18px; border-radius:2px; background:var(--rc); flex:none; }
+.why .wm { margin-top:2px; font-size:12px; color:var(--ink2); }
+.why p { margin:8px 0 0; color:var(--ink2); font-size:13px; }
+.ugrp { margin-top:14px; } .ugrp:first-of-type { margin-top:0; }
+.uh { display:inline-block; cursor:default; margin-bottom:6px; }
+.chips { display:flex; flex-wrap:wrap; gap:6px; }
+.cp { display:inline-block; padding:2px 10px; border-radius:12px; font-size:12px; background:var(--nc); color:var(--nct); }
+.cp i { font-style:normal; opacity:.75; margin-left:4px; }
+details > summary { cursor:pointer; list-style:none; } details > summary::-webkit-details-marker { display:none; }
+details > summary::before { content:"+"; display:inline-block; width:18px; color:var(--ink2); font-weight:600; }
+details[open] > summary::before { content:"-"; }
+details[open] > summary { margin-bottom:12px; }
+.count { color:var(--ink2); font-size:12px; font-weight:400; margin-left:8px; }
+.tools { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+.tools input, .tools select { padding:7px 10px; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--ink); font:inherit; }
+.tools input { flex:1; min-width:200px; }
+.wrap { overflow-x:auto; border:1px solid var(--border); border-radius:8px; }
+table { border-collapse:collapse; width:100%; }
+th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--grid); vertical-align:top; }
+th { position:sticky; top:0; background:var(--surface); font-size:12px; color:var(--ink2); text-transform:uppercase; letter-spacing:.04em; }
+td.num { text-align:right; font-variant-numeric:tabular-nums; } .detail { color:var(--ink2); font-size:12px; word-break:break-all; max-width:520px; }
+.rules { color:var(--ink2); font-size:12px; }
+.mono { font-family:Consolas, "Cascadia Mono", monospace; font-size:12px; word-break:break-all; }
+.ctx { max-width:460px; color:var(--ink2); } .ctx hr { border:0; border-top:1px solid var(--grid); margin:6px 0; }
+.notes ul { margin:4px 0 0; padding-left:20px; color:var(--ink2); }
+.foot { color:var(--ink2); font-size:12px; }
+.tip { position:fixed; z-index:10; max-width:340px; padding:8px 10px; background:var(--surface); color:var(--ink); border:1px solid var(--axis); border-radius:6px;
+  box-shadow:0 4px 14px rgba(0,0,0,.18); font-size:12px; line-height:1.4; white-space:pre-line; pointer-events:none; overflow-wrap:anywhere; }
+.tip[hidden] { display:none; }
+@media (max-width:760px) {
+  body { padding:12px 16px 32px; } .card { padding:16px; }
+  .tiles { grid-template-columns:repeat(2, 1fr); } .tv { font-size:32px; } .tile:last-child { grid-column:1 / -1; }
+  .hrow { grid-template-columns:1fr auto; } .htrack { grid-column:1 / -1; }
+}
+'@
+$css = $css.Replace('/*DARK*/', $darkVars)
+
+$js = @'
+(function () {
+  var tip = document.createElement('div');
+  tip.className = 'tip'; tip.setAttribute('role', 'tooltip'); tip.hidden = true;
+  document.body.appendChild(tip);
+  function place(x, y) {
+    var w = tip.offsetWidth, h = tip.offsetHeight, l = x + 14, t = y + 14;
+    if (l + w > window.innerWidth - 8) l = Math.max(8, x - w - 14);
+    if (t + h > window.innerHeight - 8) t = Math.max(8, y - h - 14);
+    tip.style.left = l + 'px'; tip.style.top = t + 'px';
+  }
+  function show(el, x, y) {
+    var s = el.getAttribute('data-tip');
+    if (!s) return;
+    tip.textContent = s; tip.hidden = false; place(x, y);
+  }
+  function hide() { tip.hidden = true; }
+  function onPointer(e) {
+    var el = e.target.closest ? e.target.closest('[data-tip]') : null;
+    if (el) show(el, e.clientX, e.clientY); else hide();
+  }
+  document.addEventListener('pointermove', onPointer);
+  document.addEventListener('pointerdown', onPointer);
+  document.addEventListener('focusin', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-tip]') : null;
+    if (!el) return;
+    var r = el.getBoundingClientRect();
+    show(el, r.left + r.width / 2, r.bottom);
+  });
+  document.addEventListener('focusout', hide);
+  document.addEventListener('scroll', hide, true);
+  document.documentElement.addEventListener('pointerleave', hide);
+  document.querySelectorAll('.tools').forEach(function (bar) {
+    var q = bar.querySelector('input'), r = bar.querySelector('.f-risk');
+    var rows = document.querySelectorAll('#' + bar.dataset.for + ' tr');
+    function apply() {
+      var t = q.value.toLowerCase();
+      rows.forEach(function (tr) {
+        var ok = (!r.value || tr.dataset.risk === r.value) && (!t || tr.textContent.toLowerCase().indexOf(t) !== -1);
+        tr.style.display = ok ? '' : 'none';
+      });
+    }
+    q.addEventListener('input', apply); r.addEventListener('change', apply);
+  });
+})();
+'@
+
+$pcName = ConvertTo-HtmlText $env:COMPUTERNAME
+$metaParts = @("Run $($Started.ToString('yyyy-MM-dd HH:mm'))", "elevated: $IsAdmin", ('profiles: ' + ($summary.ProfilesScanned -join ', ')), "history window: $Days days")
+if ($scanOn) { $metaParts += "prompt window: $PromptDays days" } else { $metaParts += 'prompt scan: skipped' }
+$metaHtml = ConvertTo-HtmlText ($metaParts -join ' | ')
+$metaHtml = $metaHtml.Replace(' | ', ' &middot; ')
+
+$sections = New-Object System.Text.StringBuilder
+[void]$sections.AppendLine('<section class="card"><h2>Tools by rating</h2><p class="sub">Each AI tool, rated by the sensitive data found in its own local data</p>' + $ratingHtml + '</section>')
+if ($scanOn) {
+    [void]$sections.AppendLine('<section class="card"><h2>Where the sensitive data is</h2><p class="sub">Total sensitive-data hits per tool (all users); bar color = worst rating</p>' + $whereHtml + '</section>')
+    if ($heatHtml) {
+        [void]$sections.AppendLine('<section class="card"><h2>What kind of data</h2><p class="sub">Hits per tool and data category; hover a cell for the rules</p>' + $heatHtml + '</section>')
+    }
+    if ($whyHtml) {
+        [void]$sections.AppendLine('<section class="card"><h2>Why it matters</h2><p class="sub">One card per kind of data found</p><div class="whys">' + $whyHtml + '</div></section>')
+    }
+}
+[void]$sections.AppendLine('<section class="card"><h2>Present but not scored</h2><p class="sub">Found, but they keep no data this script can read. Hover for what each kind of tool means</p>' + $unscoredHtml + '</section>')
+[void]$sections.AppendLine('<details class="card sec"><summary>How scoring works</summary>' + $scoringHtml + '</details>')
 
 $html = @"
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rogue AI Audit - $(ConvertTo-HtmlText $env:COMPUTERNAME)</title>
+<title>Rogue AI Audit - $pcName</title>
 <style>
-:root { --bg:#f6f7f9; --card:#fff; --fg:#1d2330; --muted:#5d6675; --line:#dfe3ea; --critical:#7f1d1d;
-  --high:#c62828; --medium:#d97706; --low:#2f7d32; --info:#3a6fb0; }
-@media (prefers-color-scheme: dark) { :root { --bg:#14171c; --card:#1d2129; --fg:#e6e9ef; --muted:#9aa3b2; --line:#2e3440; --critical:#fca5a5;
-  --high:#ef5350; --medium:#f59e0b; --low:#66bb6a; --info:#64a0e6; } }
-* { box-sizing:border-box; }
-body { margin:0; padding:24px 16px; background:var(--bg); color:var(--fg); font:14px/1.45 "Segoe UI", system-ui, sans-serif; }
-main { max-width:1400px; margin:0 auto; }
-h1 { margin:0 0 4px; font-size:22px; } .sub { color:var(--muted); margin-bottom:20px; }
-.summary { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:14px 18px; margin-bottom:20px; max-width:1100px; }
-.summary h3 { margin:16px 0 4px; font-size:14px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
-.summary p { margin:6px 0; } .summary ul { margin:4px 0; padding-left:20px; } .summary li { margin:6px 0; }
-.summary .headline { font-size:16px; font-weight:600; margin-top:0; }
-.cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:20px; }
-.card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
-.card .n { font-size:26px; font-weight:600; } .card .l { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
-.card.High .n { color:var(--high); } .card.Medium .n { color:var(--medium); } .card.Low .n { color:var(--low); }
-.card.NoneFound .n { color:var(--low); } .card.NotChecked .n { color:var(--muted); }
-.tools { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
-.tools input, .tools select { padding:7px 10px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--fg); font:inherit; }
-.tools input { flex:1; min-width:200px; }
-.wrap { overflow-x:auto; background:var(--card); border:1px solid var(--line); border-radius:8px; }
-table { border-collapse:collapse; width:100%; }
-th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
-th { position:sticky; top:0; background:var(--card); font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
-td.num { text-align:right; } .detail { color:var(--muted); font-size:12px; word-break:break-all; max-width:520px; }
-.badge { display:inline-block; padding:1px 8px; border-radius:10px; font-size:12px; font-weight:600; color:#fff; white-space:nowrap; }
-.badge.High { background:var(--high); } .badge.Medium { background:var(--medium); }
-.badge.Low { background:var(--low); } .badge.Info { background:var(--info); }
-.badge.NoneFound { background:transparent; color:var(--low); border:1px solid var(--low); }
-.badge.NotChecked { background:var(--line); color:var(--muted); }
-.notes { margin-top:20px; color:var(--muted); } .notes ul { margin:4px 0 0; padding-left:20px; }
-h2 { margin:32px 0 4px; font-size:18px; }
-.card.Critical .n { color:var(--critical); } .badge.Critical { background:#7f1d1d; }
-.mono { font-family:Consolas, "Cascadia Mono", monospace; font-size:12px; word-break:break-all; }
-.ctx { max-width:460px; color:var(--muted); } .ctx hr { border:0; border-top:1px dashed var(--line); margin:6px 0; }
+$css
 </style></head><body><main>
-<h1>Rogue AI Audit: $(ConvertTo-HtmlText $env:COMPUTERNAME)</h1>
-<div class="sub">Run $($Started.ToString('yyyy-MM-dd HH:mm')) &middot; elevated: $IsAdmin &middot; profiles: $(ConvertTo-HtmlText ($summary.ProfilesScanned -join ', ')) &middot; history window: $Days days</div>
-<div class="summary"><h2 style="margin-top:0">Detection summary</h2>
-$($summaryHtml.ToString())
-</div>
-<div class="cards">
-<div class="card"><div class="n">$toolCount</div><div class="l">Tools found</div></div>
-<div class="card Critical"><div class="n">$($toolsByRisk['Critical'])</div><div class="l">Critical</div></div>
-<div class="card High"><div class="n">$($toolsByRisk['High'])</div><div class="l">High</div></div>
-<div class="card Medium"><div class="n">$($toolsByRisk['Medium'])</div><div class="l">Medium</div></div>
-<div class="card Low"><div class="n">$($toolsByRisk['Low'])</div><div class="l">Low</div></div>
-<div class="card NoneFound"><div class="n">$($toolsByRisk['None found'])</div><div class="l">None found</div></div>
-<div class="card NotChecked"><div class="n">$($toolsByRisk['Not checked'])</div><div class="l">Not checked</div></div>
-</div>
-<h2>AI apps, extensions and sites</h2>
+<header><h1>Rogue AI Audit - $pcName</h1><div class="meta">$metaHtml</div></header>
+<div class="tiles">$tilesHtml</div>
+$headlineHtml
+$($sections.ToString())
+<details class="card sec" open>
+<summary>AI apps, extensions and sites <span class="count">$(@($Sorted).Count) rows</span></summary>
 <div class="tools" data-for="rows">
 <input type="search" placeholder="Filter by app, site, user, source...">
 <select class="f-risk"><option value="">All risks</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>None found</option><option>Not checked</option><option>Info</option></select>
@@ -1905,23 +2201,13 @@ $($summaryHtml.ToString())
 <div class="wrap"><table><thead><tr><th>Risk</th><th>Data hits</th><th>User</th><th>Item</th><th>Category</th><th>Source</th><th>Visits</th><th>First seen</th><th>Last seen</th></tr></thead>
 <tbody id="rows">
 $($rowsHtml.ToString())</tbody></table></div>
-$dataSection
-<div class="notes"><b>Notes</b><ul>$notesHtml</ul>
-<p>CSV and JSON: $(ConvertTo-HtmlText $OutputPath)</p></div>
+</details>
+$dataTableHtml
+<details class="card sec notes"><summary>Notes</summary><ul>$notesHtml</ul><p class="muted">CSV and JSON: $(ConvertTo-HtmlText $OutputPath)</p></details>
+<div class="foot">Values are masked, but this report still describes sensitive data: treat it as confidential.</div>
 </main>
 <script>
-document.querySelectorAll('.tools').forEach(function (bar) {
-  var q = bar.querySelector('input'), r = bar.querySelector('.f-risk');
-  var rows = document.querySelectorAll('#' + bar.dataset.for + ' tr');
-  function apply() {
-    var t = q.value.toLowerCase();
-    rows.forEach(function (tr) {
-      var ok = (!r.value || tr.dataset.risk === r.value) && (!t || tr.textContent.toLowerCase().indexOf(t) !== -1);
-      tr.style.display = ok ? '' : 'none';
-    });
-  }
-  q.addEventListener('input', apply); r.addEventListener('change', apply);
-});
+$js
 </script></body></html>
 "@
 

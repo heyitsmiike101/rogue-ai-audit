@@ -21,6 +21,11 @@ stays in the Cowork workspace (see its root CONTEXT.md). User docs: `README.md`.
   `Tool` or they won't rate the tool.
 - The detection summary is fixed templates, never AI: rule lists are generated from `$DataRules`; explanations come from
   `$CategoryWhy` (per data category) and `$ToolTypeNote` (per tool category, plus the PRC-provider note).
+- The HTML report is chart-first and fully self-contained (endpoints are often offline): charts are inline SVG/CSS
+  built in PowerShell, small vanilla JS for tooltips and filters, no CDNs or external fonts. Rating colors use the
+  dataviz status palette (Critical #d03b3b, High #ec835a, Medium #fab219, Low #3987e5, None found #0ca30c, Not checked
+  gray) and always sit next to a text label. Keep wording short; long text belongs in collapsed sections. To look at
+  a report in the browser pane, serve it over a local http server (file:// pages can't be inspected there).
 - Detection lists are the catalogs at the top of the script (sites, apps, per-user paths, extension patterns); tune there.
 - History is read via Windows' built-in `winsqlite3.dll` (P/Invoke); raw-file scan is the fallback.
 - C# classes are suffixed `2` (`RogueAiSqlite2`, `RogueAiData2`, `RogueAiScan2`), a leftover from when v1 and v2 loaded
