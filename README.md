@@ -101,6 +101,8 @@ powershell -ExecutionPolicy Bypass -File .\Find-RogueAI.ps1
 
 ## Output
 
+- **Console progress** while it runs: seven numbered steps with timings, and file counts during the prompt/cache scan
+  (the slow part; large Claude Code histories can take a minute or more).
 - **HTML report** next to the script: `RogueAI-Report_<PC>_<time>.html`, with the detection summary, the tools table
   (rating, data hits, user, source, visits) and the data findings table, both filterable.
 - **In `-OutputPath`**: `Findings.csv`, `DataFindings.csv`, `Summary.json` (counts, per-tool ratings, summary text)

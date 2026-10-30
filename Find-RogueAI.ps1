@@ -340,6 +340,24 @@ $DataRules = $null
 $HistoryDetail = New-Object System.Collections.Generic.List[object]
 $Notes = New-Object System.Collections.Generic.List[string]
 
+# Live status on the console (Write-Host, so it shows as the run goes and stays out of the output stream).
+$StepTotal = 7
+$StepNum = 0
+$StepClock = [Diagnostics.Stopwatch]::StartNew()
+$StepStart = [TimeSpan]::Zero
+function Write-Step([string]$Text) {
+    $script:StepNum++
+    $script:StepStart = $StepClock.Elapsed
+    Write-Host ('[{0}/{1}] {2}...' -f $script:StepNum, $StepTotal, $Text) -ForegroundColor Cyan
+}
+function Write-StepDone([string]$Result) {
+    $secs = ($StepClock.Elapsed - $script:StepStart).TotalSeconds
+    Write-Host ('      {0} ({1:N1}s)' -f $Result, $secs) -ForegroundColor DarkGray
+}
+function Write-Detail([string]$Text) { Write-Host ('      ' + $Text) -ForegroundColor DarkGray }
+
+Write-Host 'Rogue AI Audit: starting (loading helpers)...' -ForegroundColor Cyan
+
 function Test-IsAdmin {
     $id = [Security.Principal.WindowsIdentity]::GetCurrent()
     ([Security.Principal.WindowsPrincipal]$id).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -832,6 +850,8 @@ Write-Output ("Rogue AI audit on {0} | elevated: {1} | profiles: {2} | history w
 try {
 
 #region Installed apps
+    Write-Step 'Checking installed apps, Store packages and running processes'
+    $stepMark = $Findings.Count
 
     $uninstallKeys = @(
         @{ User = '(machine)'; Path = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*' }
@@ -889,9 +909,13 @@ try {
             -Detail "$($p.ProcessName).exe $path"
     }
 
+    Write-StepDone ('{0} found' -f ($Findings.Count - $stepMark))
+
 #endregion
 
 #region Per-user indicators, IDE extensions, model files
+    Write-Step $(if ($ScanModelFiles) { 'Checking user profiles for AI tools, IDE extensions and model files' } else { 'Checking user profiles for AI tools and IDE extensions' })
+    $stepMark = $Findings.Count
 
     foreach ($prof in $Profiles) {
         foreach ($ind in $UserIndicators) {
@@ -928,9 +952,13 @@ try {
         }
     }
 
+    Write-StepDone ('{0} found' -f ($Findings.Count - $stepMark))
+
 #endregion
 
 #region Browser extensions
+    Write-Step 'Checking browser extensions'
+    $stepMark = $Findings.Count
 
     function Get-ExtensionDisplayName($Manifest, [string]$Dir) {
         $name = [string]$Manifest.name
@@ -1005,9 +1033,13 @@ try {
         }
     }
 
+    Write-StepDone ('{0} found' -f ($Findings.Count - $stepMark))
+
 #endregion
 
 #region Browser history
+    Write-Step "Reading browser history (last $Days days)"
+    $stepMark = $Findings.Count
 
     $Agg = @{}
     function Register-Visit([string]$User, [string]$Browser, [string]$Url, [string]$Title, $VisitUtc) {
@@ -1106,9 +1138,13 @@ try {
             -Count $a.Count -FirstSeen $a.First -LastSeen $a.Last -Detail (($hosts | Sort-Object) -join ', ')
     }
 
+    Write-StepDone ('{0} AI sites found' -f ($Findings.Count - $stepMark))
+
 #endregion
 
 #region DNS cache
+    Write-Step 'Checking the DNS cache'
+    $stepMark = $Findings.Count
 
     try {
         $dnsHosts = Get-DnsClientCache -ErrorAction Stop | ForEach-Object Entry | Where-Object { $_ } | Select-Object -Unique
@@ -1130,13 +1166,18 @@ try {
         $Notes.Add("DNS cache not checked: $($_.Exception.Message)")
     }
 
+    Write-StepDone ('{0} AI sites found' -f ($Findings.Count - $stepMark))
+
 #endregion
 
 #region Prompt and cache scan (high-value data sent to AI; rule-based, no AI)
+    Write-Step "Scanning AI prompts and caches for sensitive data (files changed in the last $PromptDays days)"
 
     if ($SkipPromptScan) {
+        Write-StepDone 'skipped (-SkipPromptScan)'
     } elseif (-not $DataHelpersAvailable) {
         $Notes.Add('Prompt scan skipped: the C# scan helper could not be compiled on this machine.')
+        Write-StepDone 'skipped: the scan helper could not be compiled on this machine'
     } else {
 
     $PromptScanRan = $true
@@ -1383,6 +1424,7 @@ try {
     foreach ($prof in $Profiles) {
         $done = @{}
         foreach ($src in $PromptSources) {
+            $srcFiles = 0; $srcMark = $DataFindings.Count
             $roots = @(Get-Item -Path (Join-Path $prof.Path $src.Rel) -Force -ErrorAction SilentlyContinue | Where-Object { $_.PSIsContainer })
             foreach ($root in $roots) {
                 # -Include is unreliable with -LiteralPath on Windows PowerShell 5.1, so filter names here.
@@ -1399,9 +1441,15 @@ try {
                     $scannedFiles++
                     $ToolCategory[$src.Tool] = $src.Cat
                     Invoke-SensitiveScan $text $prof.User $src.App $src.Tool $f.FullName $f.LastWriteTime
+                    $srcFiles++
+                    if ($srcFiles % 100 -eq 0) { Write-Detail ('{0} - {1}: {2} files so far...' -f $prof.User, $src.App, $srcFiles) }
                 }
             }
+            if ($srcFiles) {
+                Write-Detail ('{0} - {1}: {2} files, {3} findings' -f $prof.User, $src.App, $srcFiles, ($DataFindings.Count - $srcMark))
+            }
         }
+        $storeFiles = $scannedFiles; $storeMark = $DataFindings.Count
 
         # Browser storage (IndexedDB) that belongs to AI sites
         foreach ($b in $ChromiumBrowsers) {
@@ -1443,15 +1491,21 @@ try {
                 }
             }
         }
+        if ($scannedFiles - $storeFiles) {
+            Write-Detail ('{0} - AI site storage in browsers: {1} files, {2} findings' -f $prof.User, ($scannedFiles - $storeFiles), ($DataFindings.Count - $storeMark))
+        }
     }
 
     # Page titles of AI conversations seen in browser history
+    $titleMark = $DataFindings.Count
     foreach ($k in $AiTitles.Keys) {
         $u, $br, $siteName = $k -split '\|', 3
         Invoke-SensitiveScan (($AiTitles[$k].Keys) -join "`n") $u "AI page titles ($br)" $siteName "Browser history titles, last $Days days" $null
     }
 
     $Notes.Add("Prompt scan: $scannedFiles files changed in the last $PromptDays days, plus AI page titles from history.")
+    if ($AiTitles.Count) { Write-Detail ('AI page titles from history: {0} findings' -f ($DataFindings.Count - $titleMark)) }
+    Write-StepDone ('{0} files scanned, {1} data findings' -f $scannedFiles, $DataFindings.Count)
     }
 
 #endregion
@@ -1461,6 +1515,7 @@ try {
 }
 
 #region Report
+Write-Step 'Rating tools and building the report'
 
 function ConvertTo-HtmlText($Value) {
     if ($null -eq $Value) { return '' }
@@ -2219,6 +2274,8 @@ try {
     $htmlPath = Join-Path $OutputPath $htmlName
     Set-Content -LiteralPath $htmlPath -Value $html -Encoding UTF8
 }
+Write-StepDone 'done'
+Write-Host ('Finished in {0:N1}s' -f $StepClock.Elapsed.TotalSeconds) -ForegroundColor Cyan
 Write-Output "HTML report: $htmlPath"
 
 # Open it unless told not to or running non-interactively (SYSTEM / RMM)

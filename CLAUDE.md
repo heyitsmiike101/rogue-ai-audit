@@ -26,6 +26,8 @@ stays in the Cowork workspace (see its root CONTEXT.md). User docs: `README.md`.
   dataviz status palette (Critical #d03b3b, High #ec835a, Medium #fab219, Low #3987e5, None found #0ca30c, Not checked
   gray) and always sit next to a text label. Keep wording short; long text belongs in collapsed sections. To look at
   a report in the browser pane, serve it over a local http server (file:// pages can't be inspected there).
+- Console progress uses `Write-Step` / `Write-StepDone` / `Write-Detail` (Write-Host, so it never mixes into the
+  output stream). `$StepTotal` must match the number of `Write-Step` calls; a new scan section gets its own step.
 - Detection lists are the catalogs at the top of the script (sites, apps, per-user paths, extension patterns); tune there.
 - History is read via Windows' built-in `winsqlite3.dll` (P/Invoke); raw-file scan is the fallback.
 - C# classes are suffixed `2` (`RogueAiSqlite2`, `RogueAiData2`, `RogueAiScan2`), a leftover from when v1 and v2 loaded
