@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rogue AI Audit (sample) - NWD-LT-0417</title>
+<style>
+:root { --bg:#f6f7f9; --card:#fff; --fg:#1d2330; --muted:#5d6675; --line:#dfe3ea; --critical:#7f1d1d;
+  --high:#c62828; --medium:#d97706; --low:#2f7d32; --info:#3a6fb0; }
+@media (prefers-color-scheme: dark) { :root { --bg:#14171c; --card:#1d2129; --fg:#e6e9ef; --muted:#9aa3b2; --line:#2e3440; --critical:#fca5a5;
+  --high:#ef5350; --medium:#f59e0b; --low:#66bb6a; --info:#64a0e6; } }
+* { box-sizing:border-box; }
+body { margin:0; padding:24px 16px; background:var(--bg); color:var(--fg); font:14px/1.45 "Segoe UI", system-ui, sans-serif; }
+main { max-width:1400px; margin:0 auto; }
+h1 { margin:0 0 4px; font-size:22px; } .sub { color:var(--muted); margin-bottom:20px; }
+.summary { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:14px 18px; margin-bottom:20px; max-width:1100px; }
+.summary h3 { margin:16px 0 4px; font-size:14px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+.summary p { margin:6px 0; } .summary ul { margin:4px 0; padding-left:20px; } .summary li { margin:6px 0; }
+.summary .headline { font-size:16px; font-weight:600; margin-top:0; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:20px; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
+.card .n { font-size:26px; font-weight:600; } .card .l { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+.card.High .n { color:var(--high); } .card.Medium .n { color:var(--medium); } .card.Low .n { color:var(--low); }
+.card.NoneFound .n { color:var(--low); } .card.NotChecked .n { color:var(--muted); }
+.tools { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+.tools input, .tools select { padding:7px 10px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--fg); font:inherit; }
+.tools input { flex:1; min-width:200px; }
+.wrap { overflow-x:auto; background:var(--card); border:1px solid var(--line); border-radius:8px; }
+table { border-collapse:collapse; width:100%; }
+th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+th { position:sticky; top:0; background:var(--card); font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+td.num { text-align:right; } .detail { color:var(--muted); font-size:12px; word-break:break-all; max-width:520px; }
+.badge { display:inline-block; padding:1px 8px; border-radius:10px; font-size:12px; font-weight:600; color:#fff; white-space:nowrap; }
+.badge.High { background:var(--high); } .badge.Medium { background:var(--medium); }
+.badge.Low { background:var(--low); } .badge.Info { background:var(--info); }
+.badge.NoneFound { background:transparent; color:var(--low); border:1px solid var(--low); }
+.badge.NotChecked { background:var(--line); color:var(--muted); }
+.notes { margin-top:20px; color:var(--muted); } .notes ul { margin:4px 0 0; padding-left:20px; }
+h2 { margin:32px 0 4px; font-size:18px; }
+.card.Critical .n { color:var(--critical); } .badge.Critical { background:#7f1d1d; }
+.mono { font-family:Consolas, "Cascadia Mono", monospace; font-size:12px; word-break:break-all; }
+.ctx { max-width:460px; color:var(--muted); } .ctx hr { border:0; border-top:1px dashed var(--line); margin:6px 0; }
+</style></head><body><main>
+<h1>Rogue AI Audit: NWD-LT-0417</h1>
+<div class="sub">Run 2026-10-30 14:30 &middot; elevated: False &middot; profiles: dlopez &middot; history window: 30 days</div>
+<div class="summary"><h2 style="margin-top:0">Detection summary</h2>
+<p class="headline">8 AI tools were found across 1 user profile. Sensitive data was found in the local data of 3 of them: 2 Critical, 1 Medium.</p><h3>How scoring works</h3><p>Each tool is rated by the most severe sensitive data found in the prompts, conversations and caches that tool keeps on this PC (files changed in the last 90 days). Ratings are worked out per user profile; where a tool appears in several profiles, the summary uses the most severe result.</p><ul><li><b>Critical</b> - data types: Credential / secret, Financial, Personal identity. Rules: Private key; AWS access key ID; AWS secret access key; GitHub token; OpenAI API key; Anthropic API key; Slack token; Stripe live key; Azure storage account key; Database connection string with password; Payment card number; US Social Security number; US Social Security number (labeled).</li><li><b>High</b> - data types: Credential / secret, Financial, Personal identity, Health (PHI), Confidential marking. Rules: Google API key; Credentials in URL; JSON Web Token; Password in text; API key / token assignment; Bank routing number (labeled); Bank account number (labeled); IBAN; Passport number (labeled); Driver&#39;s license (labeled); Date of birth (labeled); Medical record number; Diagnosis code (ICD-10); Privileged / trade secret marking.</li><li><b>Medium</b> - data types: Health (PHI), Confidential marking, Business sensitive. Rules: Health information terms; Confidential marking; Finance terms; HR / legal terms.</li><li><b>Low</b> - data types: Contact details, Infrastructure. Rules: Email address; US phone number; Internal IP address.</li><li><b>None found</b> - the tool&#39;s data was scanned and nothing matched.</li><li><b>Not checked</b> - the tool keeps no data this script can read (for example browser extensions, DNS lookups, or sites without cached storage), so its presence is reported but not scored.</li><li><b>Info</b> - governance tooling such as the Prompt Security extension; shown for context and never scored.</li></ul><p>Values are always masked in this report. Matching is rule-based, not AI: regular expressions with checksum validators (Luhn for card numbers, ABA for routing numbers, mod-97 for IBANs, SSN area rules), so a match is an indicator to review rather than proof of a leak.</p><h3>What was found and why it matters</h3><ul><li><b>Claude Code CLI</b> (dlopez) - Critical. Found: AWS access key ID (1), Payment card number (1), US Social Security number (1), Email address (1), Internal IP address (1). Why it matters: A live key, token or password sent to or stored by an AI tool can be read by anyone with access to that tool&#39;s history, the provider&#39;s logs or this cache, and then reused. Treat it as exposed and rotate it. Card, bank and account numbers in prompts can be kept by the tool or its provider, and are regulated data (for example under PCI DSS). They should not be pasted into AI tools. Government IDs, dates of birth and similar identifiers are enough to commit identity fraud and are regulated personal data. Keeping them in an AI tool&#39;s history widens who could see them. About this tool: AI CLI agent: transcripts can include file contents and command output, not only what the user typed.</li><li><b>Cline / Roo / Kilo</b> (dlopez) - Critical. Found: Database connection string with password (1), Password in text (1), Finance terms (4), Confidential marking (2). Why it matters: A live key, token or password sent to or stored by an AI tool can be read by anyone with access to that tool&#39;s history, the provider&#39;s logs or this cache, and then reused. Treat it as exposed and rotate it. Finance, HR and legal topics in prompts point to internal business material that may be kept or used outside the company&#39;s control. Text marked confidential, privileged or under NDA suggests business or legal material was shared with a tool that may not be approved to hold it. About this tool: Code assistant: source code and file contents may be sent to the provider, and prompts may be retained depending on the plan.</li><li><b>Ollama</b> (dlopez) - Medium. Found: Health information terms (2). Why it matters: Health information can be protected by HIPAA or similar rules, and most consumer AI tools have no agreement that allows it to be processed there. About this tool: Local LLM runtime: models run on this PC outside any company control, logging or content filtering.</li></ul><h3>Present but not scored</h3><ul><li><b>Installed apps and CLIs</b>: ChatGPT desktop, Claude desktop, Gemini CLI, Microsoft 365 Copilot. Chat assistant: on consumer plans, prompts may be retained or used for training without an enterprise agreement. AI CLI agent: transcripts can include file contents and command output, not only what the user typed.</li></ul>
+</div>
+<div class="cards">
+<div class="card"><div class="n">8</div><div class="l">Tools found</div></div>
+<div class="card Critical"><div class="n">2</div><div class="l">Critical</div></div>
+<div class="card High"><div class="n">0</div><div class="l">High</div></div>
+<div class="card Medium"><div class="n">1</div><div class="l">Medium</div></div>
+<div class="card Low"><div class="n">0</div><div class="l">Low</div></div>
+<div class="card NoneFound"><div class="n">1</div><div class="l">None found</div></div>
+<div class="card NotChecked"><div class="n">4</div><div class="l">Not checked</div></div>
+</div>
+<h2>AI apps, extensions and sites</h2>
+<div class="tools" data-for="rows">
+<input type="search" placeholder="Filter by app, site, user, source...">
+<select class="f-risk"><option value="">All risks</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>None found</option><option>Not checked</option><option>Info</option></select>
+</div>
+<div class="wrap"><table><thead><tr><th>Risk</th><th>Data hits</th><th>User</th><th>Item</th><th>Category</th><th>Source</th><th>Visits</th><th>First seen</th><th>Last seen</th></tr></thead>
+<tbody id="rows">
+<tr data-risk="Critical"><td><span class="badge Critical">Critical</span></td><td class="num">5</td><td>dlopez</td><td><b>Claude Code CLI</b><div class="detail">C:\Users\dlopez\.claude</div></td><td>AI CLI agent</td><td>Profile folder</td><td class="num"></td><td></td><td>2026-10-30 14:30</td></tr>
+<tr data-risk="Critical"><td><span class="badge Critical">Critical</span></td><td class="num">4</td><td>dlopez</td><td><b>Cline / Roo / Kilo</b><div class="detail">Prompts, conversations or caches found on disk (no install record matched)</div></td><td>Code assistant</td><td>Local AI data</td><td class="num"></td><td></td><td></td></tr>
+<tr data-risk="Medium"><td><span class="badge Medium">Medium</span></td><td class="num">1</td><td></td><td><b>Ollama</b><div class="detail">ollama.exe C:\Users\dlopez\AppData\Local\Programs\Ollama\ollama.exe</div></td><td>Local LLM runtime</td><td>Running process</td><td class="num"></td><td></td><td></td></tr>
+<tr data-risk="Medium"><td><span class="badge Medium">Medium</span></td><td class="num">1</td><td></td><td><b>Ollama</b><div class="detail">ollama app.exe C:\Users\dlopez\AppData\Local\Programs\Ollama\ollama app.exe</div></td><td>Local LLM runtime</td><td>Running process</td><td class="num"></td><td></td><td></td></tr>
+<tr data-risk="Medium"><td><span class="badge Medium">Medium</span></td><td class="num">1</td><td>dlopez</td><td><b>Ollama</b><div class="detail">Prompts, conversations or caches found on disk (no install record matched)</div></td><td>Local LLM runtime</td><td>Local AI data</td><td class="num"></td><td></td><td></td></tr>
+<tr data-risk="Medium"><td><span class="badge Medium">Medium</span></td><td class="num">1</td><td>dlopez</td><td><b>Ollama version 0.40.8</b><div class="detail">Tool: Ollama<br>Ollama 0.40.8 C:\Users\dlopez\AppData\Local\Programs\Ollama\</div></td><td>Local LLM runtime</td><td>Installed program</td><td class="num"></td><td></td><td></td></tr>
+<tr data-risk="None found"><td><span class="badge NoneFound">None found</span></td><td class="num">0</td><td>dlopez</td><td><b>OpenAI Codex CLI</b><div class="detail">C:\Users\dlopez\.codex</div></td><td>AI CLI agent</td><td>Profile folder</td><td class="num"></td><td></td><td>2026-10-30 14:30</td></tr>
+<tr data-risk="Not checked"><td><span class="badge NotChecked">Not checked</span></td><td class="num"></td><td></td><td><b>ChatGPT desktop</b><div class="detail">ChatGPT.exe C:\Program Files\WindowsApps\OpenAI.Codex_26.1023.6621.0_x64__2p2nqsd0c76g0\app\ChatGPT.exe</div></td><td>Chat assistant</td><td>Running process</td><td class="num"></td><td></td><td></td></tr>
+<tr data-risk="Not checked"><td><span class="badge NotChecked">Not checked</span></td><td class="num"></td><td></td><td><b>Claude desktop</b><div class="detail">claude.exe C:\Users\dlopez\AppData\Roaming\Claude\claude-code\2.1.309\9078b9c1d466\claude.exe</div></td><td>Chat assistant</td><td>Running process</td><td class="num"></td><td></td><td></td></tr>
+<tr data-risk="Not checked"><td><span class="badge NotChecked">Not checked</span></td><td class="num"></td><td>dlopez</td><td><b>Claude desktop</b><div class="detail">Claude 4.4212.0.0</div></td><td>Chat assistant</td><td>Store/MSIX package</td><td class="num"></td><td></td><td></td></tr>
+<tr data-risk="Not checked"><td><span class="badge NotChecked">Not checked</span></td><td class="num"></td><td>dlopez</td><td><b>Gemini CLI</b><div class="detail">C:\Users\dlopez\.gemini</div></td><td>AI CLI agent</td><td>Profile folder</td><td class="num"></td><td></td><td>2026-10-30 14:30</td></tr>
+<tr data-risk="Not checked"><td><span class="badge NotChecked">Not checked</span></td><td class="num"></td><td>dlopez</td><td><b>Microsoft 365 Copilot</b><div class="detail">Microsoft.MicrosoftOfficeHub 19.2610.35011.0</div></td><td>Chat assistant</td><td>Store/MSIX package</td><td class="num"></td><td></td><td></td></tr>
+</tbody></table></div>
+<h2>High-value data in AI prompts and caches</h2>
+<div class="sub">Rule-based scan (patterns, checksums, keywords; no AI) of prompts and conversations AI tools stored on this PC in the last 90 days. Values are masked. This section still describes sensitive data: treat the report as confidential.</div>
+<div class="cards">
+<div class="card"><div class="n">10</div><div class="l">Data findings</div></div>
+<div class="card Critical"><div class="n">4</div><div class="l">Critical</div></div>
+<div class="card High"><div class="n">1</div><div class="l">High</div></div>
+<div class="card Medium"><div class="n">3</div><div class="l">Medium</div></div>
+<div class="card Low"><div class="n">2</div><div class="l">Low</div></div>
+</div>
+<div class="tools" data-for="drows">
+<input type="search" placeholder="Filter by app, rule, user, file...">
+<select class="f-risk"><option value="">All severities</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
+</div>
+<div class="wrap"><table><thead><tr><th>Severity</th><th>User</th><th>App / source</th><th>Rule</th><th>Hits</th><th>Unique</th><th>Examples (masked)</th><th>Context (masked)</th><th>File</th></tr></thead>
+<tbody id="drows">
+<tr data-risk="Critical"><td><span class="badge Critical">Critical</span></td><td>dlopez</td><td>Claude Code CLI</td><td><b>US Social Security number</b><div class="detail">Personal identity</div></td><td class="num">1</td><td class="num">1</td><td class="mono">*****4399</td><td class="mono ctx">...r&quot;,&quot;content&quot;:&quot;my aws key AKIA... and card #### #### #### #### and ssn [*****4399] and test #### #### #### #### and ###-##-#### mail me at ja***@*** hos...</td><td class="detail">C:\Users\dlopez\.claude\projects\x\s.jsonl<br>2026-10-30 14:30</td></tr>
+<tr data-risk="Critical"><td><span class="badge Critical">Critical</span></td><td>dlopez</td><td>Claude Code CLI</td><td><b>Payment card number</b><div class="detail">Financial</div></td><td class="num">1</td><td class="num">1</td><td class="mono">************6467</td><td class="mono ctx">...user&quot;,&quot;message&quot;:{&quot;role&quot;:&quot;user&quot;,&quot;content&quot;:&quot;my aws key AKIA... and card [************6467] and ssn ###-##-#### and test #### #### #### #### and ###-##-#### mail...</td><td class="detail">C:\Users\dlopez\.claude\projects\x\s.jsonl<br>2026-10-30 14:30</td></tr>
+<tr data-risk="Critical"><td><span class="badge Critical">Critical</span></td><td>dlopez</td><td>Claude Code CLI</td><td><b>AWS access key ID</b><div class="detail">Credential / secret</div></td><td class="num">1</td><td class="num">1</td><td class="mono">AKIAA...[20 chars]</td><td class="mono ctx">...{&quot;type&quot;:&quot;user&quot;,&quot;message&quot;:{&quot;role&quot;:&quot;user&quot;,&quot;content&quot;:&quot;my aws key [AKIAA...[20 chars]] and card #### #### #### #### and ssn ###-##-#### and test #### #### #...</td><td class="detail">C:\Users\dlopez\.claude\projects\x\s.jsonl<br>2026-10-30 14:30</td></tr>
+<tr data-risk="Critical"><td><span class="badge Critical">Critical</span></td><td>dlopez</td><td>Cline / Roo / Kilo</td><td><b>Database connection string with password</b><div class="detail">Credential / secret</div></td><td class="num">1</td><td class="num">1</td><td class="mono">Win...[15 chars]</td><td class="mono ctx">...ntent&quot;:&quot;connect with Serv...;Database=hr;User Id=svc_payroll;Password=[Win...[15 chars]] and list salaries&quot;}] ...</td><td class="detail">C:\Users\dlopez\AppData\Roaming\Code\User\globalStorage\saoudrizwan.claude-dev\tasks\1\api_conversation_history.json<br>2026-10-30 14:30</td></tr>
+<tr data-risk="High"><td><span class="badge High">High</span></td><td>dlopez</td><td>Cline / Roo / Kilo</td><td><b>Password in text</b><div class="detail">Credential / secret</div></td><td class="num">1</td><td class="num">1</td><td class="mono">Win...[15 chars]</td><td class="mono ctx">...ntent&quot;:&quot;connect with Serv...;Database=hr;User Id=svc_payroll;Password=[Win...[15 chars]] and list salaries&quot;}] ...</td><td class="detail">C:\Users\dlopez\AppData\Roaming\Code\User\globalStorage\saoudrizwan.claude-dev\tasks\1\api_conversation_history.json<br>2026-10-30 14:30</td></tr>
+<tr data-risk="Medium"><td><span class="badge Medium">Medium</span></td><td>dlopez</td><td>Cline / Roo / Kilo</td><td><b>Finance terms</b><div class="detail">Business sensitive</div></td><td class="num">4</td><td class="num">4</td><td class="mono">revenue forecast | merger | term sheet</td><td class="mono ctx">...ent&quot;:&quot;Summarize this CONFIDENTIAL - internal use only draft of the Q4 [revenue forecast] and the merger term sheet before the board call&quot;},{&quot;role&quot;:&quot;user&quot;,&quot;con...<hr>...IDENTIAL - internal use only draft of the Q4 revenue forecast and the [merger] term sheet before the board call&quot;},{&quot;role&quot;:&quot;user&quot;,&quot;content&quot;:&quot;connect ...</td><td class="detail">C:\Users\dlopez\AppData\Roaming\Code\User\globalStorage\saoudrizwan.claude-dev\tasks\1\api_conversation_history.json<br>2026-10-30 14:30</td></tr>
+<tr data-risk="Medium"><td><span class="badge Medium">Medium</span></td><td>dlopez</td><td>Cline / Roo / Kilo</td><td><b>Confidential marking</b><div class="detail">Confidential marking</div></td><td class="num">2</td><td class="num">2</td><td class="mono">CONFIDENTIAL | internal use only</td><td class="mono ctx">...[{&quot;role&quot;:&quot;user&quot;,&quot;content&quot;:&quot;Summarize this [CONFIDENTIAL] - internal use only draft of the Q4 revenue forecast and the merger t...<hr>...[{&quot;role&quot;:&quot;user&quot;,&quot;content&quot;:&quot;Summarize this CONFIDENTIAL - [internal use only] draft of the Q4 revenue forecast and the merger term sheet before the...</td><td class="detail">C:\Users\dlopez\AppData\Roaming\Code\User\globalStorage\saoudrizwan.claude-dev\tasks\1\api_conversation_history.json<br>2026-10-30 14:30</td></tr>
+<tr data-risk="Medium"><td><span class="badge Medium">Medium</span></td><td>dlopez</td><td>Ollama CLI</td><td><b>Health information terms</b><div class="detail">Health (PHI)</div></td><td class="num">2</td><td class="num">2</td><td class="mono">patient name | diagnosed with</td><td class="mono ctx">...[patient name] John Example diagnosed with something ...<hr>...patient name John Example [diagnosed with] something ...</td><td class="detail">C:\Users\dlopez\.ollama\history<br>2026-10-30 14:30</td></tr>
+<tr data-risk="Low"><td><span class="badge Low">Low</span></td><td>dlopez</td><td>Claude Code CLI</td><td><b>Internal IP address</b><div class="detail">Infrastructure</div></td><td class="num">1</td><td class="num">1</td><td class="mono">10.1.2.3</td><td class="mono ctx">...nd test #### #### #### #### and ###-##-#### mail me at ja***@*** host [10.1.2.3]&quot;}} ...</td><td class="detail">C:\Users\dlopez\.claude\projects\x\s.jsonl<br>2026-10-30 14:30</td></tr>
+<tr data-risk="Low"><td><span class="badge Low">Low</span></td><td>dlopez</td><td>Claude Code CLI</td><td><b>Email address</b><div class="detail">Contact details</div></td><td class="num">1</td><td class="num">1</td><td class="mono">ja****************om</td><td class="mono ctx">...n ###-##-#### and test #### #### #### #### and ###-##-#### mail me at [ja****************om] host 10.1.2.3&quot;}} ...</td><td class="detail">C:\Users\dlopez\.claude\projects\x\s.jsonl<br>2026-10-30 14:30</td></tr>
+</tbody></table></div>
+<div class="notes"><b>Notes</b><ul><li>Profile scan limited to C:\Users\dlopez (-ProfilePath).</li><li>Prompt scan: 4 files changed in the last 90 days, plus AI page titles from history.</li></ul>
+<p>CSV and JSON: C:\ProgramData\RogueAIAudit\NWD-LT-0417_20261030-143035</p></div>
+</main>
+<script>
+document.querySelectorAll('.tools').forEach(function (bar) {
+  var q = bar.querySelector('input'), r = bar.querySelector('.f-risk');
+  var rows = document.querySelectorAll('#' + bar.dataset.for + ' tr');
+  function apply() {
+    var t = q.value.toLowerCase();
+    rows.forEach(function (tr) {
+      var ok = (!r.value || tr.dataset.risk === r.value) && (!t || tr.textContent.toLowerCase().indexOf(t) !== -1);
+      tr.style.display = ok ? '' : 'none';
+    });
+  }
+  q.addEventListener('input', apply); r.addEventListener('change', apply);
+});
+</script></body></html>

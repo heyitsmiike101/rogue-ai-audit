@@ -1,6 +1,6 @@
 # Real audit reports describe a machine's users and data; never commit them.
 RogueAI-*Report_*.html
 Reports/*
-!Reports/RogueAI-v2-Sample-Report.html
+!Reports/RogueAI-Sample-Report.html
 *.csv
 Summary.json
